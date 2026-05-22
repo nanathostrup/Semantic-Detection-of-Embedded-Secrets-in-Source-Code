@@ -10,15 +10,11 @@ namespace Project{
     {
         public static void Main(String[] args)
         {
-            // GetCurrentDirectory()
             string filePath = Path.GetFullPath(
                 Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "WeatherSimple")
             );
-
-            Console.WriteLine(filePath);
-            // string filePath =  "";
             var secretDetector = new SecretDetector();
-            // secretDetector.Detect(filePath);
+            secretDetector.Detect(filePath);
         }
     }
 }

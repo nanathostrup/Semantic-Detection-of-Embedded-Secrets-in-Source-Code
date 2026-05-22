@@ -1,0 +1,15 @@
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\bin\Debug\net10.0\WeatherSimple.exe
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\bin\Debug\net10.0\WeatherSimple.deps.json
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\bin\Debug\net10.0\WeatherSimple.runtimeconfig.json
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\bin\Debug\net10.0\WeatherSimple.dll
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\bin\Debug\net10.0\WeatherSimple.pdb
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.AssemblyInfoInputs.cache
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.AssemblyInfo.cs
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.csproj.CoreCompileInputs.cache
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.sourcelink.json
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.dll
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\refint\WeatherSimple.dll
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.pdb
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\WeatherSimple.genruntimeconfig.cache
+C:\Users\natd\OneDrive - Netcompany\Desktop\Test\WeatherSimple\obj\Debug\net10.0\ref\WeatherSimple.dll
