@@ -53,12 +53,14 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                     {
                         // unusedEnvironmentVariables.Add(line); //Hele linjen in envfilen
                         // string extractedStr = extractString(line); //Kun selve valuen
+                        string parentPath = Directory.GetParent(filePath).FullName;
+                        string shortenedPath = Path.GetRelativePath(filePath, envfile);
                         int locationIndex = line.Value.lineNumber;//Lokationen i env filen
                         float score = 0.0F; //Den skal initialiseres her, og opdateres i analysen af stringen
                         string comment = ""; //Den skal initialiseres her, og opdateres i analyse delen   
                         // string name = extractName(line); //smid navnet på hvad secreten er initialiseret som ind 
                                                          // -- Anderledes end usedenvvars fordi det den er intialiseret som bare er i env filen og ikke i koden
-                        var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, envfile, line.Value.value.Trim(), line.Key, score, comment, false);
+                        var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, shortenedPath, line.Value.value.Trim(), line.Key, score, comment, false);
                         unusedEnvironmentVariables.Add(envVar);
                     }
                 }
@@ -95,11 +97,13 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                         {
                             // usedEnvironmentVariables.Add(line); //Hele linjen in envfilen
                             // string extractedStr = extractString(line); //Kun selve valuen
+                            string parentPath = Directory.GetParent(filePath).FullName;
+                            string shortenedPath = Path.GetRelativePath(parentPath, envfile);
                             int locationIndex = line.Value.lineNumber; //Lokationen i env filen - burde måske være sin egen funtion men det her er så meget nemmere:)))
                             float score = 0.0F; //Den skal initialiseres her, og opdateres i analysen af stringen
                             string comment = ""; //Den skal initialiseres her, og opdateres i analyse delen
                             string name = kvp.Value; //Hvad selve secreten er initializeret som i koden. Skal bruges til dataflow analysen
-                            var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, envfile, line.Value.value.Trim(), name, score, comment, true);
+                            var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, shortenedPath, line.Value.value.Trim(), name, score, comment, true);
                             usedEnvironmentVariables.Add(envVar);
                         }
                     }

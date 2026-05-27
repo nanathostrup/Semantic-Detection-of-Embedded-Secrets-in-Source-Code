@@ -72,6 +72,7 @@ namespace Project.SecretDetection.DetectionsTypes{
             buildReport(usedEnvVarWithScores, false);
             buildReport(unusedEnvVarWithScores, true); //hardcoded append feature. Fix in future.
             string logpath = Path.Combine(Directory.GetCurrentDirectory(), "Report.txt"); 
+            
             Console.WriteLine("A report has been made in " + logpath);
 
         }
