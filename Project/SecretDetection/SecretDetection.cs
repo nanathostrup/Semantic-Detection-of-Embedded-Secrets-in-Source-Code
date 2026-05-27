@@ -10,6 +10,9 @@ using Project.SecretDetection.PlaceAnalysis;
 using System.Linq.Expressions;
 
 
+using Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections; //SLET WHEN DONE DEBUGGING
+
+
 namespace Project.SecretDetection{
     public class SecretDetector
     {
@@ -51,7 +54,16 @@ namespace Project.SecretDetection{
             Console.WriteLine("");
             Console.WriteLine(" ================================= ENV CHECK ================================= ");
             var envFileDetection = new EnvironmentFileDetection();
-            envFileDetection.handleDetection(trees, filePath, environmentVariableMap);
+            envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
+            
+            // var envChecker = new EnvChecker2();
+            // List<EnvironmentFileDetection.EnvironmentVariable> unUsed = envChecker.getUnusedEnvVariables(walker.EnvironmentVariableMap, filePath);
+            // Console.WriteLine(":)");
+            // foreach(var unused in unUsed)
+            // {
+            //     Console.WriteLine("unused variable found {0}:", unused.name);
+            //     Console.WriteLine("         {0}", unused.secret);
+            // }
             
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +121,6 @@ namespace Project.SecretDetection{
 
         }
 
-        //Tyv stjålet fra sooomewhere... dont remember hvor...
         static void PrintNode(SyntaxNode node, int indent)
         {
             var padding = new string(' ', indent * 2);

@@ -29,7 +29,7 @@ namespace Project.SecretDetection.DetectionsTypes{
                 this.score = score; //abstract
                 this.comment = comment; //abstract
                 this.used = used;
-            } 
+            }
         }
         
         public void handleDetection(List<SyntaxTree> trees, string filePath, Dictionary<string, string> environmentVariableMap)
@@ -52,9 +52,9 @@ namespace Project.SecretDetection.DetectionsTypes{
             }
             
             Console.WriteLine("");
-            Console.WriteLine(" ================================= SCORING =================================== ");
-            List<EnvironmentVariable> usedEnvVarWithScores = giveScore(trees, usedEnvironmentVariables);
-            List<EnvironmentVariable> unusedEnvVarWithScores = giveScore(trees, unusedEnvironmentVariables);
+            Console.WriteLine(" ================================= SCORING =================================== "); 
+            List<EnvironmentVariable> usedEnvVarWithScores = giveScore(trees, usedEnvironmentVariables); 
+            List<EnvironmentVariable> unusedEnvVarWithScores = giveScore(trees, unusedEnvironmentVariables); 
             foreach(var usedEnvVarWithScore in usedEnvVarWithScores)
             {
                 Console.WriteLine("Name: {0}. Final score for secret {1}: {2}", usedEnvVarWithScore.name, usedEnvVarWithScore.secret, usedEnvVarWithScore.score);
@@ -71,7 +71,8 @@ namespace Project.SecretDetection.DetectionsTypes{
             Console.WriteLine(" ================================== REPORT =================================== ");
             buildReport(usedEnvVarWithScores, false);
             buildReport(unusedEnvVarWithScores, true); //hardcoded append feature. Fix in future.
-            Console.WriteLine("A report has been made in FIGURE OUT");
+            string logpath = Path.Combine(Directory.GetCurrentDirectory(), "Report.txt"); 
+            Console.WriteLine("A report has been made in " + logpath);
 
         }
         public List<EnvironmentVariable> checkEnvironmentFileForUsed(Dictionary<string, string> environmentVariableMap, string filePath)
