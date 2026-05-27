@@ -53,12 +53,12 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                     {
                         // unusedEnvironmentVariables.Add(line); //Hele linjen in envfilen
                         // string extractedStr = extractString(line); //Kun selve valuen
-                        int locationIndex = i;//Lokationen i env filen
+                        int locationIndex = line.Value.lineNumber;//Lokationen i env filen
                         float score = 0.0F; //Den skal initialiseres her, og opdateres i analysen af stringen
                         string comment = ""; //Den skal initialiseres her, og opdateres i analyse delen   
                         // string name = extractName(line); //smid navnet på hvad secreten er initialiseret som ind 
                                                          // -- Anderledes end usedenvvars fordi det den er intialiseret som bare er i env filen og ikke i koden
-                        var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, envfile, line.Value.Trim(), line.Key, score, comment, false);
+                        var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, envfile, line.Value.value.Trim(), line.Key, score, comment, false);
                         unusedEnvironmentVariables.Add(envVar);
                     }
                 }
@@ -95,11 +95,11 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                         {
                             // usedEnvironmentVariables.Add(line); //Hele linjen in envfilen
                             // string extractedStr = extractString(line); //Kun selve valuen
-                            int locationIndex = i; //Lokationen i env filen - burde måske være sin egen funtion men det her er så meget nemmere:)))
+                            int locationIndex = line.Value.lineNumber; //Lokationen i env filen - burde måske være sin egen funtion men det her er så meget nemmere:)))
                             float score = 0.0F; //Den skal initialiseres her, og opdateres i analysen af stringen
                             string comment = ""; //Den skal initialiseres her, og opdateres i analyse delen
                             string name = kvp.Value; //Hvad selve secreten er initializeret som i koden. Skal bruges til dataflow analysen
-                            var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, envfile, line.Value.Trim(), name, score, comment, true);
+                            var envVar = new EnvironmentFileDetection.EnvironmentVariable(locationIndex, envfile, line.Value.value.Trim(), name, score, comment, true);
                             usedEnvironmentVariables.Add(envVar);
                         }
                     }
@@ -107,52 +107,99 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
             }
             return usedEnvironmentVariables;
         }
-
-        public Dictionary<string,string> extractEntries(string envfile)
+        public Dictionary<string, (string value, int lineNumber)> extractEntries(string envfile)
         {
-            Dictionary<string, string> entries = new Dictionary<string, string>();
+            var entries = new Dictionary<string, (string value, int lineNumber)>();
             bool multiline = false;
-            string currentValue="";
-            string currentKey="";
+            string currentValue = "";
+            string currentKey = "";
+            int lineNumber = 0;
+            int entryStartLine = 0;
 
-            foreach(var line in File.ReadLines(envfile))
+            foreach (var line in File.ReadLines(envfile))
             {
-               if (multiline)
+                lineNumber++;
+                if (multiline)
                 {
                     currentValue += line;
                     if (line.TrimEnd().EndsWith("\""))
                     {
                         multiline = false;
-                        entries[currentKey] = currentValue;
+                        entries[currentKey] = (currentValue, entryStartLine); // ← use start line
                         currentKey = "";
-                        currentValue ="";
-                        continue;
+                        currentValue = "";
                     }
                     continue;
                 }
-                if(!multiline){
-                    if (line.Contains("="))
+
+                if (line.Contains("="))
+                {
+                    var parts = line.Split('=', 2);
+                    currentKey = parts[0];
+                    currentValue = parts[1];
+                    entryStartLine = lineNumber; // ← record where this entry started
+
+                    if (currentValue.Trim().StartsWith("\"") && !currentValue.Trim().EndsWith("\""))
                     {
-
-                        var parts = line.Split('=', 2);
-                        currentKey = parts[0];
-                        currentValue = parts[1];
-
-                        if (currentValue.Trim().StartsWith("\"") && !currentValue.Trim().EndsWith("\""))
-                        {
-                            multiline = true;
-                        }
-                        else
-                        {
-                            entries[currentKey] = currentValue;
-                            currentKey = "";
-                            currentValue = "";
-                        }
+                        multiline = true;
+                    }
+                    else
+                    {
+                        entries[currentKey] = (currentValue, lineNumber);
+                        currentKey = "";
+                        currentValue = "";
                     }
                 }
             }
             return entries;
         }
+
+
+        // public Dictionary<string,string> extractEntries(string envfile)
+        // {
+        //     Dictionary<string, string> entries = new Dictionary<string, string>();
+        //     bool multiline = false;
+        //     string currentValue="";
+        //     string currentKey="";
+
+        //     foreach(var line in File.ReadLines(envfile))
+        //     {
+        //        if (multiline)
+        //         {
+        //             currentValue += line;
+        //             if (line.TrimEnd().EndsWith("\""))
+        //             {
+        //                 multiline = false;
+        //                 entries[currentKey] = currentValue;
+        //                 currentKey = "";
+        //                 currentValue ="";
+        //                 continue;
+        //             }
+        //             continue;
+        //         }
+        //         if(!multiline){
+        //             if (line.Contains("="))
+        //             {
+
+        //                 var parts = line.Split('=', 2);
+        //                 currentKey = parts[0];
+        //                 currentValue = parts[1];
+
+        //                 if (currentValue.Trim().StartsWith("\"") && !currentValue.Trim().EndsWith("\""))
+        //                 {
+        //                     multiline = true;
+        //                 }
+        //                 else
+        //                 {
+        //                     entries[currentKey] = currentValue;
+        //                     currentKey = "";
+        //                     currentValue = "";
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     return entries;
+        // }
 
         
         public string extractString(string envVariables) // Giver dig din string uden = og uden mellemrummet. Hvis ikke "= " passer så får man bare alt.
