@@ -51,30 +51,42 @@ namespace Project.SecretDetection{
                 // Console.WriteLine("");
             }
             
-            Console.WriteLine("");
-            Console.WriteLine(" ================================= ENV CHECK ================================= ");
-            var envFileDetection = new EnvironmentFileDetection();
-            envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
+            // Console.WriteLine("");
+            // Console.WriteLine(" ================================= ENV CHECK ================================= ");
+            // var envFileDetection = new EnvironmentFileDetection();
+            // envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
             
-            // var envChecker = new EnvChecker2();
-            // List<EnvironmentFileDetection.EnvironmentVariable> unUsed = envChecker.getUnusedEnvVariables(walker.EnvironmentVariableMap, filePath);
-            // Console.WriteLine(":)");
-            // foreach(var unused in unUsed)
-            // {
-            //     Console.WriteLine("unused variable found {0}:", unused.name);
-            //     Console.WriteLine("         {0}", unused.secret);
-            // }
             
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /// DEBUGGING///
             
-            // Console.WriteLine("");
-            // Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
-            // var httpDetector= new HttpDetector();
-            // List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[2] };
-            // float weight = httpDetector.getWeight(firstTree, "defaultCity");
-            // Console.WriteLine("The weight of http location detection: {0}, for variable {1}", weight, "defaultCity"); 
+            Console.WriteLine("");
+            Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
+            var httpDetector= new HttpDetector();
+            List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[2] };
+            string teststring = "random";
+            float weight = httpDetector.getWeight(trees, teststring);
+            Console.WriteLine("The weight of http location detection: {0}, for variable {1}", weight, teststring); 
+
+
+            List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(trees, "HttpClient");
+            foreach(var http in httper)
+            {
+                Console.WriteLine("HTTPS: " + http);
+            }
+            var dfa = new DataFlowAnalyzer2();
+            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees, httper);
+            // foreach (var kvp in dfaTest)
+            // {
+            //     SyntaxToken key = kvp.Key;
+            //     List<SyntaxToken> values = kvp.Value;
+            //     Console.WriteLine("Key: " + key);
+            //     foreach (var value in values)
+            //     {
+            //         Console.WriteLine($"       Value: {value}");
+            //     }
+            // }
 
 
             // Console.WriteLine("");

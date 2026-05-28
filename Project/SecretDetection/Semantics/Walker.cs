@@ -22,7 +22,7 @@ namespace Project.SecretDetection.Semantics{
 
             if (GetEnvVar)
             {
-                Console.WriteLine("GetEnvVar is used");
+                // Console.WriteLine("GetEnvVar is used");
                 var arglist = invocation.ArgumentList //We want the string litteral that is from the argument list to ensure we have the input for the GetEnvironmentVariable().
                     .Arguments
                     .Select(t => t.Expression)
