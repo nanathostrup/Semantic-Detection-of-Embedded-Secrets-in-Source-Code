@@ -8,6 +8,8 @@ using Project.SecretDetection.SecretsAnalysis;
 using Project.SecretDetection.DetectionsTypes;
 using Project.SecretDetection.PlaceAnalysis;
 using System.Linq.Expressions;
+using System.Reflection;
+
 
 
 using Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections; //SLET WHEN DONE DEBUGGING
@@ -65,18 +67,36 @@ namespace Project.SecretDetection{
             Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
             var httpDetector= new HttpDetector();
             List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[2] };
-            string teststring = "random";
-            float weight = httpDetector.getWeight(trees, teststring);
-            Console.WriteLine("The weight of http location detection: {0}, for variable {1}", weight, teststring); 
+            var dfa = new DataFlowAnalyzer3();
+            
 
-
-            List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(trees, "HttpClient");
+            List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(firstTree, "HttpClient");
             foreach(var http in httper)
             {
                 Console.WriteLine("HTTPS: " + http);
             }
-            var dfa = new DataFlowAnalyzer2();
-            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees, httper);
+            
+            dfa.dataflow3(trees[2], httper);
+
+
+
+
+
+
+            // string teststring = "random";
+            // float weight = httpDetector.getWeight(trees, teststring);
+            // Console.WriteLine("The weight of http location detection: {0}, for variable {1}", weight, teststring); 
+
+
+            // List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(firstTree, "HttpClient");
+            // foreach(var http in httper)
+            // {
+            //     Console.WriteLine("HTTPS: " + http);
+            // }
+            // var dfa = new DataFlowAnalyzer2();
+            // Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(firstTree, httper);
+
+
             // foreach (var kvp in dfaTest)
             // {
             //     SyntaxToken key = kvp.Key;

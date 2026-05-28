@@ -7,6 +7,8 @@ using System.Xml.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Reflection;
+
 
 namespace Project.SecretDetection.Semantics{
     class DataFlowAnalyzer2
@@ -14,17 +16,30 @@ namespace Project.SecretDetection.Semantics{
         public Dictionary<SyntaxToken, List<SyntaxToken>> initDataflow2(List<SyntaxTree> trees, List<SyntaxToken> idTokens)
         {
             // List<SyntaxToken> foundInTrees = getIdTokenInTree(trees, idTokens);
-
             var dict = new Dictionary<SyntaxToken, List<SyntaxToken>>(); 
+            var compilation = CSharpCompilation.Create(
+                assemblyName: "Analysis",
+                syntaxTrees: trees,
+                references: new[]
+                {
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+
+                    MetadataReference.CreateFromFile(
+                        typeof(Console).Assembly.Location),
+
+                    MetadataReference.CreateFromFile(
+                        typeof(Enumerable).Assembly.Location)
+                });
+
             foreach (var token in idTokens)
             {
                 dict[token] = new List<SyntaxToken>();
             }
             List<SyntaxToken> visited = new List<SyntaxToken>();
-            return dataflowAnalysis(trees, dict, visited);//, 0);
+            return dataflowAnalysis(trees, dict, visited, compilation);//, 0);
         }
 
-        public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(List<SyntaxTree> trees, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
+        public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(List<SyntaxTree> trees, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
         {
             //we look into all id tokens
             //then for each id token we look through all trees
@@ -39,13 +54,15 @@ namespace Project.SecretDetection.Semantics{
             //     return idTokens;
             // }
             
+            Console.WriteLine("Entered dataflow");
+
             //We need to look for all instances of the keys in the tree so that we can use them for the analysis
             List<SyntaxToken> lookFor = new List<SyntaxToken>(); 
             foreach (var kv in idTokens)
             {
                 lookFor.Add(kv.Key);
             }
-            List<SyntaxToken> foundInTrees = getIdTokenInTree(trees, lookFor);
+            List<SyntaxToken> foundInTrees = getIdTokenInTree(trees, lookFor, compilation);
             foreach(var f in foundInTrees)
             {
                 if (!idTokens.Keys.Contains(f))
@@ -104,25 +121,65 @@ namespace Project.SecretDetection.Semantics{
             else
             {
                 // counter ++; //til debugging
-                return dataflowAnalysis(trees, newFinds, visited);//, counter);
+                return dataflowAnalysis(trees, newFinds, visited, compilation);//, counter);
             }
         }
 
-        public List<SyntaxToken> getIdTokenInTree(List<SyntaxTree> trees, List<SyntaxToken> idTokens) // RETHINK THiS METHOD
+      
+
+        public List<SyntaxToken> getIdTokenInTree(List<SyntaxTree> trees, List<SyntaxToken> idTokens, CSharpCompilation compilation) // RETHINK THiS METHOD
         {
             List<SyntaxToken> foundInTree = new List<SyntaxToken>();
             foreach (var idToken in idTokens)
             {
-                for (int i = 0; i < trees.Count; i++)
+                var sourceModel = compilation.GetSemanticModel(idToken.Parent!.SyntaxTree);
+
+                 for (int i = 0; i < trees.Count; i++)
                     {
+                        var model = compilation.GetSemanticModel(trees[i]);
                         SyntaxNode root = trees[i].GetRoot();
                         var matchingTokens = root.DescendantTokens()
-                            .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
-                                        t.Text == idToken.Text) //SYNDEREN
+                            .Where(t => 
+                                    // t.IsKind(SyntaxKind.IdentifierToken) &&
+                //                         // (AssemblyName.GetAssemblyName(t.ValueText)==AssemblyName.GetAssemblyName(idToken.Text)))
+                //                         // (Assembly.FullName.ToString(t) == Assembly.FullName.ToString(idToken)))
+                                        // t.Text == idToken.Text //SYNDEREN
+                //                     // var symbol=model.GetSymbolInfo(t).Symbol
+                //                     // SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(t.Parent!).Symbol, sourceModel.GetSymbolInfo(idToken.Parent!).Symbol))
+                //                     // (model.GetDeclaredSymbol(t!.Parent!).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == model.GetDeclaredSymbol(idToken!.Parent!).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+                //                     // (model.GetSymbolInfo(t.Parent!).Symbol!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == model.GetSymbolInfo(idToken.Parent!).Symbol!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)) 
+                                // )
+                            // .ToList();
+                            {
+                                if (!t.IsKind(SyntaxKind.IdentifierToken))
+                                    return false;
+
+                                var symbol1 = model.GetSymbolInfo(t.Parent!).Symbol;
+                                var symbol2 = sourceModel.GetSymbolInfo(idToken.Parent!).Symbol;
+
+                                if (symbol1 == null || symbol2 == null)
+                                    return false;
+
+                                return symbol1.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                                    == symbol2.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                            })
                             .ToList();
-                        
                         foundInTree.AddRange(matchingTokens);
                     }
+
+
+                // for (int i = 0; i < trees.Count; i++)
+                //     {
+                //         SyntaxNode root = trees[i].GetRoot();
+                //         var matchingTokens = root.DescendantTokens()
+                //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
+                //                         // (AssemblyName.GetAssemblyName(t.ValueText)==AssemblyName.GetAssemblyName(idToken.Text)))
+                //                         // (Assembly.FullName.ToString(t) == Assembly.FullName.ToString(idToken)))
+                //                         t.Text == idToken.Text) //SYNDEREN
+                //             .ToList();
+
+                //         foundInTree.AddRange(matchingTokens);
+                //     }
             }
             return foundInTree;
         }
@@ -158,22 +215,29 @@ namespace Project.SecretDetection.Semantics{
             {
                 case MemberAccessExpressionSyntax memberAccess:
                     // return new List<SyntaxToken>();
+                    Console.WriteLine("member access");
                     return memberAccessHandler(trees, idTokens, node);
                 case InvocationExpressionSyntax invocation:
-                    return new List<SyntaxToken>();
-                    // return invocationHandler(trees, idTokens, node);
+                    Console.WriteLine("Invocation");
+                    // return new List<SyntaxToken>();
+                    return invocationHandler(trees, idTokens, node);
                 case VariableDeclaratorSyntax variableDeclarator:
                     // return new List<SyntaxToken>();
+                    Console.WriteLine("variable declarator");
                     return variableDeclaratorHandler(trees, idTokens, node);
                 case AssignmentExpressionSyntax assignment:
                     // return new List<SyntaxToken>();
+                    Console.WriteLine("Assigment");
                     return assignmentExpressionHandler(trees, idTokens, node); 
                 case ParameterSyntax parameter:
+                    Console.WriteLine("parameter");
                     return new List<SyntaxToken>();
                     // return new List<SyntaxToken>(); //Needs handling
                 case ExpressionStatementSyntax expression:
+                    Console.WriteLine("expression");
                     return new List<SyntaxToken>();
                 case InterpolationSyntax interpolation:
+                    Console.WriteLine("interpolation");
                     return InterpolationSyntaxHandler(trees, idTokens, node);
                     // return expressionStatementHandler(trees, idTokens, node);
                 //might be missing some cases - needs researching
@@ -190,7 +254,7 @@ namespace Project.SecretDetection.Semantics{
             bool parentIsInvocation = node.Parent is InvocationExpressionSyntax;
             if (parentIsInvocation)
             {
-                return invocationHandler(trees, idTokens, node.Parent);
+                return invocationHandler(trees, idTokens, node.Parent!);
             }
             //HANDLE OTHER CASES OF THIS INSTANCE
             return idTokens;

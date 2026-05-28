@@ -63,7 +63,7 @@ namespace Project.SecretDetection.PlaceAnalysis{
                 var initAs = idTokensSyntaxNodes
                     .Select(n => n.FirstAncestorOrSelf<VariableDeclaratorSyntax>())
                     .Where(v => v != null)
-                    .Select(v => v.Identifier)
+                    .Select(v => v!.Identifier)
                     .ToList();
 
                 if (initAs.Any())
