@@ -54,7 +54,7 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                         // unusedEnvironmentVariables.Add(line); //Hele linjen in envfilen
                         // string extractedStr = extractString(line); //Kun selve valuen
                         string parentPath = Directory.GetParent(filePath).FullName;
-                        string shortenedPath = Path.GetRelativePath(filePath, envfile);
+                        string shortenedPath = Path.GetRelativePath(parentPath, envfile);
                         int locationIndex = line.Value.lineNumber;//Lokationen i env filen
                         float score = 0.0F; //Den skal initialiseres her, og opdateres i analysen af stringen
                         string comment = ""; //Den skal initialiseres her, og opdateres i analyse delen   
