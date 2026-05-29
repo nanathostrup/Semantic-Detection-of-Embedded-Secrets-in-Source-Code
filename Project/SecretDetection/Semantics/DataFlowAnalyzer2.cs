@@ -109,9 +109,9 @@ namespace Project.SecretDetection.Semantics{
                     {
                         Console.WriteLine($"         candidate: {t.ValueText} | parentType: {t.Parent!.GetType().Name}");
                     }
-                    someName = someName
-                        .Where(t => HasDirectConnection(key, t))
-                        .ToList(); 
+                    // someName = someName
+                    //     .Where(t => HasDirectConnection(key, t))
+                    //     .ToList(); 
                     
                     Console.WriteLine("After has direct connection filter");
                     foreach(var t in someName)
@@ -179,10 +179,6 @@ namespace Project.SecretDetection.Semantics{
             }
         }
 
-    //   public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation)
-    //     {
-    //         fo
-    //     }
 
         // public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation) // RETHINK THiS METHOD
         // {
@@ -427,28 +423,30 @@ namespace Project.SecretDetection.Semantics{
             // we look at the arguments that go into the invocation method only. 
             // Not the other stuff. This can be reevaluated for the future, but for the sake of this project it does not make sense. Time is also ticking:)))))
             // FAKTISK : implementer for alle børn for hvis der er en metode der skal traces, så bliver den det ikke her...
-            // if(node is InvocationExpressionSyntax invocation)
-            // {
-            //     var newIdTokens = invocation.ArgumentList
-            //         .Arguments
-            //         .Select(t => t.Expression)
-            //         .OfType<IdentifierNameSyntax>()
-            //         .Select(t => t.Identifier)
-            //         .ToList();
+            // var newIdTokens = node.DescendantTokens();
+            if(node is InvocationExpressionSyntax invocation)
+            {
+                var tokens = invocation.ArgumentList
+                    .Arguments
+                    .Select(t => t.Expression)
+                    .OfType<IdentifierNameSyntax>()
+                    .Select(t => t.Identifier)
+                    .ToList();
 
-            //     return newIdTokens;
-            // }
-            // //To handle other cases
+                return tokens;
+            }
+            //To handle other cases
             // return idTokens;
-            // var newIdTokens = node.DescendantNodes()
+            // var tokens = node.DescendantNodes()
             //     .Where(t=> t.IsKind(SyntaxKind.TypeArgumentList));
-            //     return 
+            
+            // return tokens;
 
-            var newIdTokens = node.DescendantTokens()
+            var toookens = node.DescendantTokens()
                 .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
                 .ToList();
 
-            return newIdTokens;
+            return toookens;
         }
         
         //The next couple of functions are identical except for their name
