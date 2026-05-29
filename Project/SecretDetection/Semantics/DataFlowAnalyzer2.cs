@@ -82,6 +82,11 @@ namespace Project.SecretDetection.Semantics{
                     idTokens.Add(f, new List<SyntaxToken>());
                 }
             }
+            
+            //FILTER OUT TOKENS THAT DO NOT HAVE A DIRECT CONNECTION!
+
+
+
             // //filter out the global variables once we've reached their end point
             // foreach (var kv in idTokens)
             // {
@@ -139,37 +144,37 @@ namespace Project.SecretDetection.Semantics{
                     }
                 }
             }
-            var model = compilation.GetSemanticModel(tree);
-            foreach (var add in additions)
-            {
-                var originalSymbol = model.GetSymbolInfo(add.Parent!).Symbol
-                                ?? model.GetDeclaredSymbol(add.Parent!);
+            // var model = compilation.GetSemanticModel(tree);
+            // foreach (var add in additions)
+            // {
+            //     var originalSymbol = model.GetSymbolInfo(add.Parent!).Symbol
+            //                     ?? model.GetDeclaredSymbol(add.Parent!);
                 
-                if (originalSymbol == null || 
-                    (originalSymbol.Kind != SymbolKind.Local && 
-                    originalSymbol.Kind != SymbolKind.Field &&
-                    originalSymbol.Kind != SymbolKind.Parameter))
-                {
-                    // Still add the token itself, just don't expand usages
-                    if (!newFinds.ContainsKey(add))
-                        newFinds[add] = new List<SyntaxToken>();
-                    continue;
-                }
+            //     if (originalSymbol == null || 
+            //         (originalSymbol.Kind != SymbolKind.Local && 
+            //         originalSymbol.Kind != SymbolKind.Field &&
+            //         originalSymbol.Kind != SymbolKind.Parameter))
+            //     {
+            //         // Still add the token itself, just don't expand usages
+            //         if (!newFinds.ContainsKey(add))
+            //             newFinds[add] = new List<SyntaxToken>();
+            //         continue;
+            //     }
 
-                var allOccurrences = tree.GetRoot().DescendantTokens()
-                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
-                    .Where(t => {
-                        var sym = model.GetSymbolInfo(t.Parent!).Symbol
-                            ?? model.GetDeclaredSymbol(t.Parent!);
-                        return SymbolEqualityComparer.Default.Equals(sym, originalSymbol);
-                    });
+            //     var allOccurrences = tree.GetRoot().DescendantTokens()
+            //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
+            //         .Where(t => {
+            //             var sym = model.GetSymbolInfo(t.Parent!).Symbol
+            //                 ?? model.GetDeclaredSymbol(t.Parent!);
+            //             return SymbolEqualityComparer.Default.Equals(sym, originalSymbol);
+            //         });
 
-                foreach (var occurrence in allOccurrences)
-                {
-                    if (!newFinds.ContainsKey(occurrence))
-                        newFinds[occurrence] = new List<SyntaxToken>();
-                }
-            }
+            //     foreach (var occurrence in allOccurrences)
+            //     {
+            //         if (!newFinds.ContainsKey(occurrence))
+            //             newFinds[occurrence] = new List<SyntaxToken>();
+            //     }
+            // }
 
             foreach (var add in additions)
             {
