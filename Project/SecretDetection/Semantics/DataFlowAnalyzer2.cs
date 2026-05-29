@@ -74,14 +74,14 @@ namespace Project.SecretDetection.Semantics{
             {
                 lookFor.Add(kv.Key);
             }
-            // List<SyntaxToken> foundInTrees = getIdTokenInTree(tree, lookFor, compilation);
-            // foreach(var f in foundInTrees)
-            // {
-            //     if (!idTokens.Keys.Contains(f))
-            //     {
-            //         idTokens.Add(f, new List<SyntaxToken>());
-            //     }
-            // }
+            List<SyntaxToken> foundInTrees = getIdTokenInTree(tree, lookFor, compilation);
+            foreach(var f in foundInTrees)
+            {
+                if (!idTokens.Keys.Contains(f))
+                {
+                    idTokens.Add(f, new List<SyntaxToken>());
+                }
+            }
             // //filter out the global variables once we've reached their end point
             // foreach (var kv in idTokens)
             // {
@@ -139,6 +139,38 @@ namespace Project.SecretDetection.Semantics{
                     }
                 }
             }
+            var model = compilation.GetSemanticModel(tree);
+            foreach (var add in additions)
+            {
+                var originalSymbol = model.GetSymbolInfo(add.Parent!).Symbol
+                                ?? model.GetDeclaredSymbol(add.Parent!);
+                
+                if (originalSymbol == null || 
+                    (originalSymbol.Kind != SymbolKind.Local && 
+                    originalSymbol.Kind != SymbolKind.Field &&
+                    originalSymbol.Kind != SymbolKind.Parameter))
+                {
+                    // Still add the token itself, just don't expand usages
+                    if (!newFinds.ContainsKey(add))
+                        newFinds[add] = new List<SyntaxToken>();
+                    continue;
+                }
+
+                var allOccurrences = tree.GetRoot().DescendantTokens()
+                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
+                    .Where(t => {
+                        var sym = model.GetSymbolInfo(t.Parent!).Symbol
+                            ?? model.GetDeclaredSymbol(t.Parent!);
+                        return SymbolEqualityComparer.Default.Equals(sym, originalSymbol);
+                    });
+
+                foreach (var occurrence in allOccurrences)
+                {
+                    if (!newFinds.ContainsKey(occurrence))
+                        newFinds[occurrence] = new List<SyntaxToken>();
+                }
+            }
+
             foreach (var add in additions)
             {
                 newFinds[add] = new List<SyntaxToken>();
@@ -157,7 +189,10 @@ namespace Project.SecretDetection.Semantics{
             }
         }
 
-      
+    //   public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation)
+    //     {
+    //         fo
+    //     }
 
         // public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation) // RETHINK THiS METHOD
         // {
@@ -166,10 +201,10 @@ namespace Project.SecretDetection.Semantics{
         //     var model = compilation.GetSemanticModel(tree);
 
         //     foreach (var idtoken in idTokens){
-        //         var originalSymbol = GetSymbol(model, idToken.Parent!);
+        //         // var originalSymbol = GetSymbol(model, idToken.Parent!);
 
-        //         if (originalSymbol == null)
-        //             return new List<SyntaxToken>();
+        //         // if (originalSymbol == null)
+        //         //     return new List<SyntaxToken>();
 
         //         var matchingTokens = root.DescendantNodes()
         //             .OfType<IdentifierNameSyntax>()
@@ -187,50 +222,48 @@ namespace Project.SecretDetection.Semantics{
 
         //     return matchingTokens;
         //     }    
-        // public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation)
-        // {
-        //     var foundInTree = new List<SyntaxToken>();
+        public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation)
+        {
+            var foundInTree = new List<SyntaxToken>();
 
-        //     var root = tree.GetRoot();
-        //     var model = compilation.GetSemanticModel(tree);
+            var root = tree.GetRoot();
+            var model = compilation.GetSemanticModel(tree);
 
-        //     foreach (var idToken in idTokens)
-        //     {
-        //         // if (idToken.Parent == null)
-        //         //     continue;
+            foreach (var idToken in idTokens)
+            {
+                // if (idToken.Parent == null)
+                //     continue;
 
-        //         // Resolve original symbol
-        //         var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!);
-        //             // GetSymbol(model, idToken.Parent!);
+                // Resolve original symbol
+                var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!);
+                    // GetSymbol(model, idToken.Parent!);
 
-        //         // if (originalSymbol == null)
-        //         //     continue;
+                // if (originalSymbol == null)
+                //     continue;
 
-        //         // Find ALL references/usages
-        //         var matches = root.DescendantNodes()
-        //             .OfType<IdentifierNameSyntax>()
-        //             .Where(identifier =>
-        //             {
-        //                 var symbol = model.GetDeclaredSymbol(identifier);
-        //                     // GetSymbol(model, identifier);
+                // Find ALL references/usages
+                var matches = root.DescendantNodes()
+                    .OfType<IdentifierNameSyntax>()
+                    .Where(identifier =>
+                    {
+                        var symbol = model.GetDeclaredSymbol(identifier);
+                            // GetSymbol(model, identifier);
 
-        //                 return SymbolEqualityComparer.Default.Equals(
-        //                     symbol,
-        //                     originalSymbol!);
-        //             })
-        //             .Select(identifier => identifier.Identifier);
+                        return SymbolEqualityComparer.Default.Equals(symbol,originalSymbol!);
+                    })
+                    .Select(identifier => identifier.Identifier);
 
-        //         foundInTree.AddRange(matches);
+                foundInTree.AddRange(matches);
 
-        //         // OPTIONAL:
-        //         // Also include declaration token itself
-        //         // foundInTree.Add(idToken);
-        //     }
+                // OPTIONAL:
+                // Also include declaration token itself
+                // foundInTree.Add(idToken);
+            }
 
-        //     return foundInTree
-        //         .Distinct()
-        //         .ToList();
-        // }
+            return foundInTree
+                .Distinct()
+                .ToList();
+        }
  
             // List<SyntaxToken> foundInTree = new List<SyntaxToken>();
             // foreach (var idToken in idTokens)
@@ -370,6 +403,10 @@ namespace Project.SecretDetection.Semantics{
                     // return expressionStatementHandler(trees, idTokens, node);
                 //might be missing some cases - needs researching
                 default:
+                    if (node is FieldDeclarationSyntax || node is LocalDeclarationStatementSyntax)
+                    {
+                        return new List<SyntaxToken>();
+                    }
                     if (node.Parent != null){ 
                         return howIsVariableUsed(tree, idTokens, node.Parent); //Not sure if this should be done like this? 
                     }
