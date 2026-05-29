@@ -39,7 +39,6 @@ namespace WeatherStation
             {
                 return $"Error retrieving weather data: {ex.Message}"; 
             }
-            Console.WriteLine(AWSAccessKeyID);
             Console.WriteLine(random); // for at teste dataflow analyse ikke rører random
             
             Action a = Console.WriteLine;

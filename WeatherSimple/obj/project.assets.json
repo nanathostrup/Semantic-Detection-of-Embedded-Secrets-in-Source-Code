@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\natd\\OneDrive - Netcompany\\Desktop\\Test\\WeatherSimple\\WeatherSimple.csproj",
+      "projectUniqueName": "C:\\Users\\natd\\OneDrive - Netcompany\\Desktop\\Semantic-Detection-of-Embedded-Secrets-in-Source-Code\\WeatherSimple\\WeatherSimple.csproj",
       "projectName": "WeatherSimple",
-      "projectPath": "C:\\Users\\natd\\OneDrive - Netcompany\\Desktop\\Test\\WeatherSimple\\WeatherSimple.csproj",
+      "projectPath": "C:\\Users\\natd\\OneDrive - Netcompany\\Desktop\\Semantic-Detection-of-Embedded-Secrets-in-Source-Code\\WeatherSimple\\WeatherSimple.csproj",
       "packagesPath": "C:\\Users\\natd\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\natd\\OneDrive - Netcompany\\Desktop\\Test\\WeatherSimple\\obj\\",
+      "outputPath": "C:\\Users\\natd\\OneDrive - Netcompany\\Desktop\\Semantic-Detection-of-Embedded-Secrets-in-Source-Code\\WeatherSimple\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\natd\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -65,7 +65,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.104/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.108/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",
