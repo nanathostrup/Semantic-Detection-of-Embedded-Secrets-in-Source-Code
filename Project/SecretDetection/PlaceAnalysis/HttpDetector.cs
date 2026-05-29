@@ -17,6 +17,11 @@ namespace Project.SecretDetection.PlaceAnalysis{
             List<SyntaxToken> initAs = whatIsVarInitializedAs(trees, "HttpClient"); //hardcoded "HttpClient" because we want to know what a developer has called a predefined HttpClient
                                                                                     //could also have been hardcoded into the function whatIsVarInitializedAs as lookFor
 
+
+            //AD COMPILATION OSV HER SÅ DET KAN SENDES TIL GETTOKENSINTREE
+            //GENOVERVEJ LIGE INITAS SÅ DET INDKOORPORERER INDPUTTET ER ALLE INSTANCER AF TOKENS ISTEDDET!
+
+
             Dictionary<SyntaxToken, List<SyntaxToken>> results = dataflow.initDataflow(trees, initAs);   //returns a list of all id tokens that "have been touched" by a http client through out code
 
             // Debugging
@@ -73,6 +78,51 @@ namespace Project.SecretDetection.PlaceAnalysis{
             }
             return results;
 
+        }
+
+        public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation)
+        {
+            var foundInTree = new List<SyntaxToken>();
+
+            var root = tree.GetRoot();
+            var model = compilation.GetSemanticModel(tree);
+
+            foreach (var idToken in idTokens)
+            {
+                // if (idToken.Parent == null)
+                //     continue;
+
+                // Resolve original symbol
+                var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!);
+                    // GetSymbol(model, idToken.Parent!);
+
+                // if (originalSymbol == null)
+                //     continue;
+
+                // Find ALL references/usages
+                var matches = root.DescendantNodes()
+                    .OfType<IdentifierNameSyntax>()
+                    .Where(identifier =>
+                    {
+                        var symbol = model.GetDeclaredSymbol(identifier);
+                            // GetSymbol(model, identifier);
+
+                        return SymbolEqualityComparer.Default.Equals(
+                            symbol,
+                            originalSymbol!);
+                    })
+                    .Select(identifier => identifier.Identifier)
+                    .Where(t => !idTokens.Contains(t)); 
+                foundInTree.AddRange(matches);
+
+                // OPTIONAL:
+                // Also include declaration token itself
+                // foundInTree.Add(idToken);
+            }
+
+            return foundInTree
+                .Distinct()
+                .ToList();
         }
         private bool ReachesSecret(SyntaxToken start, Dictionary<SyntaxToken, List<SyntaxToken>> graph, string secret)
         {
