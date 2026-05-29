@@ -97,7 +97,7 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                         {
                             // usedEnvironmentVariables.Add(line); //Hele linjen in envfilen
                             // string extractedStr = extractString(line); //Kun selve valuen
-                            string parentPath = Directory.GetParent(filePath).FullName;
+                            string parentPath = Directory.GetParent(filePath!).FullName;
                             string shortenedPath = Path.GetRelativePath(parentPath, envfile);
                             int locationIndex = line.Value.lineNumber; //Lokationen i env filen - burde måske være sin egen funtion men det her er så meget nemmere:)))
                             float score = 0.0F; //Den skal initialiseres her, og opdateres i analysen af stringen

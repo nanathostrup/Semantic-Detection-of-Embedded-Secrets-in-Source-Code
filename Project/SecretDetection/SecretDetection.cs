@@ -66,8 +66,8 @@ namespace Project.SecretDetection{
             Console.WriteLine("");
             Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
             var httpDetector= new HttpDetector();
-            List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[2] };
-            var dfa = new DataFlowAnalyzer3();
+            List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[3] };
+            var dfa = new DataFlowAnalyzer2();
             
 
             List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(firstTree, "HttpClient");
@@ -76,7 +76,20 @@ namespace Project.SecretDetection{
                 Console.WriteLine("HTTPS: " + http);
             }
             
-            dfa.dataflow3(trees[2], httper);
+            dfa.initDataflow2(trees[3], httper);
+            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees[3], httper);
+
+
+            foreach (var kvp in dfaTest)
+            {
+                SyntaxToken key = kvp.Key;
+                List<SyntaxToken> values = kvp.Value;
+                Console.WriteLine("Key: " + key);
+                foreach (var value in values)
+                {
+                    Console.WriteLine($"       Value: {value}");
+                }
+            }
 
 
 
@@ -148,8 +161,9 @@ namespace Project.SecretDetection{
             //     // Get the root of the tree
             //     SyntaxNode root = tree.GetRoot();
             //     PrintNode(root, 0);
-            // }
-
+            // // }
+            // SyntaxNode rooot = trees[1].GetRoot();
+            // PrintNode(rooot, 0);
 
         }
 
