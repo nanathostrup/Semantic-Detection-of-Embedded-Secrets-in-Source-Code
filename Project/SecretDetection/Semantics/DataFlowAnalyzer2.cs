@@ -84,8 +84,7 @@ namespace Project.SecretDetection.Semantics{
             }
 
             //FILTER OUT TOKENS THAT DO NOT HAVE A DIRECT CONNECTION!
-
-
+                //Måske global variables
 
             // //filter out the global variables once we've reached their end point
             // foreach (var kv in idTokens)
@@ -94,19 +93,6 @@ namespace Project.SecretDetection.Semantics{
             //     var value = new List<SyntaxToken>(kv.Value);
             //     //IF foundintrees[i] er under alle vores idtokens, 
             //     //  remove
-
-
-
-            //     // MethodDeclarationSyntax enclosingMethod = key.Parent!.FirstAncestorOrSelf<MethodDeclarationSyntax>()!;
-            //     // // 3. Cast the direct parent to a specific type
-            //     // if (enclosingMethod.Parent is ClassDeclarationSyntax classNode)
-            //     // {
-
-               
-            //     // }
-            // }
-
-
 
             //Dont go to the already visited nodes
             Dictionary<SyntaxToken, List<SyntaxToken>> newFinds = new Dictionary<SyntaxToken, List<SyntaxToken>>();
@@ -123,9 +109,9 @@ namespace Project.SecretDetection.Semantics{
                     {
                         Console.WriteLine($"         candidate: {t.ValueText} | parentType: {t.Parent!.GetType().Name}");
                     }
-                    // someName = someName
-                    //     .Where(t => HasDirectConnection(key, t))
-                    //     .ToList(); 
+                    someName = someName
+                        .Where(t => HasDirectConnection(key, t))
+                        .ToList(); 
                     
                     Console.WriteLine("After has direct connection filter");
                     foreach(var t in someName)
@@ -161,7 +147,7 @@ namespace Project.SecretDetection.Semantics{
 
                         // {
                         var symbol = model.GetDeclaredSymbol(value.Parent!) ?? model.GetSymbolInfo(value.Parent!).Symbol;
-                        if(symbol == null) continue;
+                        // if(symbol == null) continue;
                         // if(symbol.Kind != SymbolKind.Local && 
                         //     symbol.Kind != SymbolKind.Field && 
                         //     symbol.Kind != SymbolKind.Parameter)
@@ -242,12 +228,12 @@ namespace Project.SecretDetection.Semantics{
                 var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!) ?? model.GetSymbolInfo(idToken.Parent!).Symbol;
                     // GetSymbol(model, idToken.Parent!);
 
-                if (originalSymbol == null)
-                    continue;
+                // if (originalSymbol == null)
+                //     continue;
 
-                // if(originalSymbol.Kind != SymbolKind.Local &&
-                //    originalSymbol.Kind != SymbolKind.Field &&
-                //    originalSymbol.Kind != SymbolKind.Parameter) continue;
+                // if(originalSymbol!.Kind != SymbolKind.Local &&
+                //    originalSymbol!.Kind != SymbolKind.Field &&
+                //    originalSymbol!.Kind != SymbolKind.Parameter) continue;
 
 
                 // Find ALL references/usages
@@ -256,8 +242,7 @@ namespace Project.SecretDetection.Semantics{
                     .Where(identifier =>
                     {
                         var symbol = model.GetDeclaredSymbol(identifier) ?? model.GetSymbolInfo(identifier.Parent!).Symbol;
-                            // GetSymbol(model, identifier);
-                        if(symbol == null) return false;
+                        // if(symbol == null) return false;
                         return SymbolEqualityComparer.Default.Equals(symbol,originalSymbol!);
                     })
                     .Select(identifier => identifier.Identifier);
@@ -371,7 +356,7 @@ namespace Project.SecretDetection.Semantics{
             }
 
             return true;
-        }   
+        }
 
         
         public List<SyntaxToken> howIsVariableUsed(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
@@ -476,19 +461,6 @@ namespace Project.SecretDetection.Semantics{
 
             return newIdTokens;
         }
-        // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     if (node is VariableDeclaratorSyntax declarator && declarator.Initializer != null)
-        //     {
-        //         // Only trace the right-hand side, not the declared name itself
-        //         var newIdTokens = declarator.Initializer.DescendantTokens()
-        //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //             .ToList();
-        //         return newIdTokens;
-        //     }
-        //     return new List<SyntaxToken>();
-        // }
-
 
         public List<SyntaxToken> expressionStatementHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
         {
@@ -557,6 +529,18 @@ namespace Project.SecretDetection.Semantics{
 
             return false;
         }
+        // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        // {
+        //     if (node is VariableDeclaratorSyntax declarator && declarator.Initializer != null)
+        //     {
+        //         // Only trace the right-hand side, not the declared name itself
+        //         var newIdTokens = declarator.Initializer.DescendantTokens()
+        //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+        //             .ToList();
+        //         return newIdTokens;
+        //     }
+        //     return new List<SyntaxToken>();
+        // }
         // public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
         // {
         //     if (node is AssignmentExpressionSyntax assignment)

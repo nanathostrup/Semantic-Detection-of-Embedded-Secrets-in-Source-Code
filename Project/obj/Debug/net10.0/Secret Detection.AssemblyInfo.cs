@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Secret Detection")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d8d3405ecf67be1f993427df32b0969725e4e4ac")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9069ea9ffa49adc6b2c5a372472bf01595f3996")]
 [assembly: System.Reflection.AssemblyProductAttribute("Secret Detection")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Secret Detection")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
