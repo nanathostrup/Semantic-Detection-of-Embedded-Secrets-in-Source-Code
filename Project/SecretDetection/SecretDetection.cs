@@ -53,21 +53,21 @@ namespace Project.SecretDetection{
                 // Console.WriteLine("");
             }
             
-            // Console.WriteLine("");
-            // Console.WriteLine(" ================================= ENV CHECK ================================= ");
-            // var envFileDetection = new EnvironmentFileDetection();
-            // envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
+            Console.WriteLine("");
+            Console.WriteLine(" ================================= ENV CHECK ================================= ");
+            var envFileDetection = new EnvironmentFileDetection();
+            envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
             
             
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /// DEBUGGING///
             
-            Console.WriteLine("");
-            Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
-            var httpDetector= new HttpDetector();
-            List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[1] };
-            var dfa = new DataFlowAnalyzer2();
+            // Console.WriteLine("");
+            // Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
+            // var httpDetector= new HttpDetector();
+            // List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[1] };
+            // var dfa = new DataFlowAnalyzer2();
             
 
             // List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(firstTree, "HttpClient");
@@ -86,26 +86,26 @@ namespace Project.SecretDetection{
             //     Console.WriteLine("HTTPS TOKEN: " + id);
             // }
 
-            List<SyntaxToken> httper = findHttpInTree(trees[3],"HttpClient");
-            foreach(var http in httper)
-            {
-                Console.WriteLine("HTTPS: " + http);
-            }
+            // List<SyntaxToken> httper = findHttpInTree(trees[3],"HttpClient");
+            // foreach(var http in httper)
+            // {
+            //     Console.WriteLine("HTTPS: " + http);
+            // }
 
-            dfa.initDataflow2(trees[3], httper);
-            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees[3], httper);
+            // dfa.initDataflow2(trees[3], httper);
+            // Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees[3], httper);
 
 
-            foreach (var kvp in dfaTest)
-            {
-                SyntaxToken key = kvp.Key;
-                List<SyntaxToken> values = kvp.Value;
-                Console.WriteLine("Key: " + key);
-                foreach (var value in values)
-                {
-                    Console.WriteLine($"       Value: {value}");
-                }
-            }
+            // foreach (var kvp in dfaTest)
+            // {
+            //     SyntaxToken key = kvp.Key;
+            //     List<SyntaxToken> values = kvp.Value;
+            //     Console.WriteLine("Key: " + key);
+            //     foreach (var value in values)
+            //     {
+            //         Console.WriteLine($"       Value: {value}");
+            //     }
+            // }
 
 
 
@@ -183,53 +183,53 @@ namespace Project.SecretDetection{
 
         }
 
-        public List<SyntaxToken> findHttpInTree(SyntaxTree tree, string HttpClient)
-        {
-            List<SyntaxToken> httper = new List<SyntaxToken>();
-            SyntaxNode root = tree.GetRoot();
-            // Get the compilation 
-            // look for HttpClients
-            // Add to list
-                // If any are var declarations
-                    // add the initialized as IdToken to list too
-                    // run the findHttpInTree on this variable as well 
-            // return that list 
+        // public List<SyntaxToken> findHttpInTree(SyntaxTree tree, string HttpClient)
+        // {
+        //     List<SyntaxToken> httper = new List<SyntaxToken>();
+        //     SyntaxNode root = tree.GetRoot();
+        //     // Get the compilation 
+        //     // look for HttpClients
+        //     // Add to list
+        //         // If any are var declarations
+        //             // add the initialized as IdToken to list too
+        //             // run the findHttpInTree on this variable as well 
+        //     // return that list 
 
-            var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-            var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
-            // var model = compilation.GetSemanticModel(tree);
-            var model = compilation.GetSemanticModel(tree);
-            var idTokensSyntaxNodes = root.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
-                            t.ValueText == HttpClient)
-                .ToList();
-            List<SyntaxToken> newFinds = new List<SyntaxToken>();
-            foreach(var id in idTokensSyntaxNodes)
-            {
-                bool isInVariableDeclaration = id.Parent?.FirstAncestorOrSelf<VariableDeclarationSyntax>() != null;
-                if (isInVariableDeclaration)
-                {
-                    var declarator = id.Parent?.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+        //     var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+        //     var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
+        //     // var model = compilation.GetSemanticModel(tree);
+        //     var model = compilation.GetSemanticModel(tree);
+        //     var idTokensSyntaxNodes = root.DescendantTokens()
+        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
+        //                     t.ValueText == HttpClient)
+        //         .ToList();
+        //     List<SyntaxToken> newFinds = new List<SyntaxToken>();
+        //     foreach(var id in idTokensSyntaxNodes)
+        //     {
+        //         bool isInVariableDeclaration = id.Parent?.FirstAncestorOrSelf<VariableDeclarationSyntax>() != null;
+        //         if (isInVariableDeclaration)
+        //         {
+        //             var declarator = id.Parent?.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
 
-                    if (declarator != null)
-                    {
-                        var newAnalysis = declarator.Identifier;
-                        if (!idTokensSyntaxNodes.Contains(newAnalysis))
-                        {
-                            var newAdds = root.DescendantTokens()
-                                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
-                                            t.ValueText == newAnalysis.Text)
-                                .ToList();
-                            newFinds.AddRange(newAdds);
-                        }
-                    }                        
-                }
-            }
-            if (newFinds !=null)
-            {
-                idTokensSyntaxNodes.AddRange(newFinds);
-            }
-            return idTokensSyntaxNodes;
+        //             if (declarator != null)
+        //             {
+        //                 var newAnalysis = declarator.Identifier;
+        //                 if (!idTokensSyntaxNodes.Contains(newAnalysis))
+        //                 {
+        //                     var newAdds = root.DescendantTokens()
+        //                         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
+        //                                     t.ValueText == newAnalysis.Text)
+        //                         .ToList();
+        //                     newFinds.AddRange(newAdds);
+        //                 }
+        //             }                        
+        //         }
+        //     }
+        //     if (newFinds !=null)
+        //     {
+        //         idTokensSyntaxNodes.AddRange(newFinds);
+        //     }
+        //     return idTokensSyntaxNodes;
 
             // // Resolve original symbol
             // var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!);
@@ -253,7 +253,7 @@ namespace Project.SecretDetection{
             // OPTIONAL:
             // Also include declaration token itself
             // foundInTree.Add(idToken);
-            }
+            // }
 
             // return foundInTree
             //     .Distinct()

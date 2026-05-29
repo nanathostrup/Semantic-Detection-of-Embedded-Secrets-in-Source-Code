@@ -59,10 +59,10 @@ namespace Project.SecretDetection.Semantics{
                 dict[token] = new List<SyntaxToken>();
             }
             List<SyntaxToken> visited = new List<SyntaxToken>();
-            return dataflowAnalysis(tree, dict, visited, compilation, searchBoundary);//, 0);
+            return dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model);//, 0);
         }
 
-        public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
+        public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary, SemanticModel model)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
         {
             //we look into all id tokens
             //then for each id token we look through all trees
@@ -85,7 +85,7 @@ namespace Project.SecretDetection.Semantics{
             {
                 lookFor.Add(kv.Key);
             }
-            List<SyntaxToken> foundInTrees = getIdTokenInTree(tree, lookFor, compilation, searchBoundary);
+            List<SyntaxToken> foundInTrees = getIdTokenInTree(tree, lookFor, compilation, searchBoundary, model);
             foreach(var f in foundInTrees)
             {
                 if (!idTokens.Keys.Contains(f))
@@ -95,15 +95,8 @@ namespace Project.SecretDetection.Semantics{
             }
 
             //FILTER OUT TOKENS THAT DO NOT HAVE A DIRECT CONNECTION!
-                //Måske global variables
-
-            // //filter out the global variables once we've reached their end point
-            // foreach (var kv in idTokens)
-            // {
-            //     var key = kv.Key;
-            //     var value = new List<SyntaxToken>(kv.Value);
-            //     //IF foundintrees[i] er under alle vores idtokens, 
-            //     //  remove
+                //Global variables are not traced further
+                //search boundary which is the start inputs line
 
             //Dont go to the already visited nodes
             Dictionary<SyntaxToken, List<SyntaxToken>> newFinds = new Dictionary<SyntaxToken, List<SyntaxToken>>();
@@ -115,15 +108,12 @@ namespace Project.SecretDetection.Semantics{
                 if(!visited.Contains(kv.Key)){ //avoids recomputing if we check for already visited tokens
                     List<SyntaxToken> someName = howIsVariableUsed(tree, new List<SyntaxToken>(), key.Parent!);
                     
-                    Console.WriteLine($"--------- \n key:{key.ValueText} | Parent type: {key.Parent!.GetType().Name}");
-                    foreach (var t in someName)
-                    {
-                        Console.WriteLine($"         candidate: {t.ValueText} | parentType: {t.Parent!.GetType().Name}");
-                    }
-                    // someName = someName
-                    //     .Where(t => HasDirectConnection(key, t))
-                    //     .ToList(); 
-                    
+                    // Console.WriteLine($"--------- \n key:{key.ValueText} | Parent type: {key.Parent!.GetType().Name}");
+                    // foreach (var t in someName)
+                    // {
+                    //     Console.WriteLine($"         candidate: {t.ValueText} | parentType: {t.Parent!.GetType().Name}");
+                    // }
+
                     // Console.WriteLine("After has direct connection filter");
                     // foreach(var t in someName)
                     // {
@@ -146,7 +136,6 @@ namespace Project.SecretDetection.Semantics{
             }
 
             //Add the values as new keys in newFinds unless they already exist as keys
-            var model = compilation.GetSemanticModel(tree);
             List<SyntaxToken> additions = new List<SyntaxToken>();
             foreach(var kv in newFinds)
             {
@@ -154,20 +143,15 @@ namespace Project.SecretDetection.Semantics{
                 {
                     if (!newFinds.Keys.Contains(value))
                     {
-                        // additions.Add(value);
-
-                        // {
-                        var symbol = model.GetDeclaredSymbol(value.Parent!) ?? model.GetSymbolInfo(value.Parent!).Symbol;
-                        // if(symbol == null) continue;
-                        // if(symbol.Kind != SymbolKind.Local && 
-                        //     symbol.Kind != SymbolKind.Field && 
-                        //     symbol.Kind != SymbolKind.Parameter)
-                        // {
-                            // continue;
-                        // }
+                    // var symbol = model.GetDeclaredSymbol(value.Parent!) ?? model.GetSymbolInfo(value.Parent!).Symbol;
+                    // if(symbol == null) continue;
+                    // if(symbol.Kind != SymbolKind.Local && 
+                    //     symbol.Kind != SymbolKind.Field && 
+                    //     symbol.Kind != SymbolKind.Parameter)
+                    // {
+                        // continue;
+                    // }
                         additions.Add(value);
-                        
-            // }
                     }
                 }
             }
@@ -177,13 +161,11 @@ namespace Project.SecretDetection.Semantics{
                 newFinds[add] = new List<SyntaxToken>();
             }
             newFinds = newFinds
-                .Where(kv=> !IsFieldDeclaration(kv.Key, model))
-                // .Where(kv=> !IsParameterOrLocalUnrelated(kv.Key, model))
+                .Where(kv=> !IsFieldDeclaration(kv.Key, model)) // Ensure we dont go furhter with the class variables once we are at the top of tree
                 .ToDictionary(kv=> kv.Key, kv => kv.Value);
             
             var filteredIdTokens = idTokens
-                .Where(kv=> !IsFieldDeclaration(kv.Key, model))
-                // .Where(kv=> !IsParameterOrLocalUnrelated(kv.Key, model))
+                .Where(kv=> !IsFieldDeclaration(kv.Key, model)) // Ensure we dont go furhter with the class variables once we are at the top of tree
                 .ToDictionary(kv=> kv.Key, kv => kv.Value);
 
             //check if idTokens and newFinds are the same - if they are the analysis did not add anything and we can end the function
@@ -197,7 +179,7 @@ namespace Project.SecretDetection.Semantics{
             else
             {
                 // counter ++; //til debugging
-                return dataflowAnalysis(tree, newFinds, visited, compilation, searchBoundary);//, counter);
+                return dataflowAnalysis(tree, newFinds, visited, compilation, searchBoundary, model);//, counter);
             }
         }
         public bool IsFieldDeclaration(SyntaxToken token, SemanticModel model)
@@ -215,80 +197,21 @@ namespace Project.SecretDetection.Semantics{
             return false;
         }
 
-        // public bool IsParameterOrLocalUnrelated(SyntaxToken token, SemanticModel model)
-        // {
-        //     var symbol = model.GetDeclaredSymbol(token.Parent!) 
-        //             ?? model.GetSymbolInfo(token.Parent!).Symbol;
-            
-        //     var declaringSyntax = symbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
-            
-        //     // Debug what we're actually seeing
-        //     Console.WriteLine($"Token: {token.ValueText} | SymbolKind: {symbol?.Kind} | DeclaringSyntax type: {declaringSyntax?.GetType().Name} | Parent type: {declaringSyntax?.Parent?.GetType().Name}");
-            
-        //     return false; // temporarily always false so we can see the output
-        // }
 
-
-// public bool IsParameterOrLocalUnrelated(SyntaxToken token, SemanticModel model)
-// {
-//     var symbol = model.GetDeclaredSymbol(token.Parent!) 
-//               ?? model.GetSymbolInfo(token.Parent!).Symbol;
-    
-//     // Filter out catch clause parameters — they're exception variables, not data flow
-//     if (symbol?.Kind == SymbolKind.Local)
-//     {
-//         var declaringSyntax = symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
-//         if (declaringSyntax?.Parent is CatchDeclarationSyntax)
-//             return true;
-//     }
-    
-//     return false;
-// }
-
-
-        // public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation) // RETHINK THiS METHOD
-        // {
-
-        //     var root = tree.GetRoot();
-        //     var model = compilation.GetSemanticModel(tree);
-
-        //     foreach (var idtoken in idTokens){
-        //         // var originalSymbol = GetSymbol(model, idToken.Parent!);
-
-        //         // if (originalSymbol == null)
-        //         //     return new List<SyntaxToken>();
-
-        //         var matchingTokens = root.DescendantNodes()
-        //             .OfType<IdentifierNameSyntax>()
-        //             .Where(id =>
-        //             {
-        //                 var symbol = GetSymbol(model, id);
-
-        //                 return SymbolEqualityComparer.Default.Equals(
-        //                     symbol,
-        //                     originalSymbol);
-        //             })
-        //             .Select(id => id.Identifier)
-        //             .ToList();
-        //         }
-
-        //     return matchingTokens;
-        //     }    
-        public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation, int searchBoundary)
+        public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation, int searchBoundary, SemanticModel model)
         {
             var foundInTree = new List<SyntaxToken>();
 
             var root = tree.GetRoot();
-            var model = compilation.GetSemanticModel(tree);
+            // var model = compilation.GetSemanticModel(tree);
 
             foreach (var idToken in idTokens)
             {
                 // if (idToken.Parent == null)
                 //     continue;
 
-                // Resolve original symbol
+                // Get original symbol
                 var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!) ?? model.GetSymbolInfo(idToken.Parent!).Symbol;
-                    // GetSymbol(model, idToken.Parent!);
 
                 // if (originalSymbol == null)
                 //     continue;
@@ -343,8 +266,6 @@ namespace Project.SecretDetection.Semantics{
         
         public List<SyntaxToken> howIsVariableUsed(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
         {
-
-
             // HVAD MED PREDEFINED IDENTIFIER NAMES I NOGLE KONTEKSTER? -- e.g. Console.WriteLine eller GetEnvironmentVariable ... 
             switch (node)
             {
@@ -374,7 +295,6 @@ namespace Project.SecretDetection.Semantics{
                 case InterpolationSyntax interpolation:
                     // Console.WriteLine("interpolation");
                     return InterpolationSyntaxHandler(tree, idTokens, node);
-                    // return expressionStatementHandler(trees, idTokens, node);
                 //might be missing some cases - needs researching
                 default:
                     if (node is FieldDeclarationSyntax || node is LocalDeclarationStatementSyntax)
@@ -396,7 +316,6 @@ namespace Project.SecretDetection.Semantics{
                 return invocationHandler(tree, idTokens, node.Parent!);
             }
             //HANDLE OTHER CASES OF THIS INSTANCE
-            // return idTokens;
             var newIdTokens = node.DescendantTokens()
                 .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
                 .ToList();
@@ -422,12 +341,6 @@ namespace Project.SecretDetection.Semantics{
                 return tokens;
             }
             //To handle other cases
-            // return idTokens;
-            // var tokens = node.DescendantNodes()
-            //     .Where(t=> t.IsKind(SyntaxKind.TypeArgumentList));
-            
-            // return tokens;
-
             var toookens = node.DescendantTokens()
                 .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
                 .ToList();
@@ -472,174 +385,6 @@ namespace Project.SecretDetection.Semantics{
 
             return newIdTokens;
 
-
-            // return idTokens;
         }
-//         public List<SyntaxToken> InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-// {
-//     // Walk up to find what variable the whole interpolated string is assigned to
-//     var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-//     if (declarator != null)
-//     {
-//         return new List<SyntaxToken> { declarator.Identifier };
-//     }
-
-//     var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
-//     if (assignment != null)
-//     {
-//         return assignment.Left.DescendantTokens()
-//             .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
-//             .ToList();
-//     }
-
-//     return new List<SyntaxToken>();
-// }
-
-        // After computing newFinds, filter out tokens without a direct connection
-        // private bool HasDirectConnection(SyntaxToken sourceKey, SyntaxToken candidate)
-        // {
-        //     var parent = sourceKey.Parent;
-        //     if (parent == null) return false;
-
-        //     // Walk up to find the containing statement/expression
-        //     var containingNode = (SyntaxNode?)parent.FirstAncestorOrSelf<StatementSyntax>()?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
-        //         // var containingNode = parent.FirstAncestorOrSelf<StatementSyntax>() ?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
-            
-        //     if (containingNode == null) return false;
-
-        //     // Case 1: candidate is the LHS of an assignment where source is on RHS
-        //     if (containingNode is ExpressionStatementSyntax exprStmt &&
-        //         exprStmt.Expression is AssignmentExpressionSyntax assignment)
-        //     {
-        //         bool sourceIsOnRhs = assignment.Right.DescendantTokens()
-        //             .Any(t => t.IsEquivalentTo(sourceKey));
-        //         bool candidateIsOnLhs = assignment.Right.DescendantTokens()
-        //             .Any(t => t.IsEquivalentTo(candidate));
-        //         return sourceIsOnRhs && candidateIsOnLhs;
-        //     }
-
-        //     // Case 2: candidate is a variable being declared with source on the RHS
-        //     var declarator = parent.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-        //     if (declarator?.Initializer != null)
-        //     {
-        //         bool sourceIsInInitializer = declarator.Initializer.DescendantTokens()
-        //             .Any(t => t.IsEquivalentTo(sourceKey));
-        //         bool candidateIsTheDeclaredName = declarator.Identifier.IsEquivalentTo(candidate);
-        //         return sourceIsInInitializer && candidateIsTheDeclaredName;
-        //     }
-
-        //     // Case 3: source is passed as an argument to a method — candidate is that invocation's result variable
-        //     // (this is harder to resolve without semantic model; skip for now or handle separately)
-
-        //     return false;
-        // }
-
-//         public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-// {
-//     if (node is VariableDeclaratorSyntax declarator)
-//     {
-//         // Only return the identifier being declared — that's where data flows TO
-//         return new List<SyntaxToken> { declarator.Identifier };
-//     }
-//     return new List<SyntaxToken>();
-// }
-// public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-// {
-//     if (node is AssignmentExpressionSyntax assignment)
-//     {
-//         // Only return the LEFT side — where data flows TO
-//         return assignment.Left.DescendantTokens()
-//             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-//             .ToList();
-//     }
-//     return new List<SyntaxToken>();
-// }
-
-
-        // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     if (node is VariableDeclaratorSyntax declarator && declarator.Initializer != null)
-        //     {
-        //         // Only trace the right-hand side, not the declared name itself
-        //         var newIdTokens = declarator.Initializer.DescendantTokens()
-        //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //             .ToList();
-        //         return newIdTokens;
-        //     }
-        //     return new List<SyntaxToken>();
-        // }
-        // public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     if (node is AssignmentExpressionSyntax assignment)
-        //     {
-        //         // Only return the LHS — that's where the data flows TO
-        //         return assignment.Right.DescendantTokens()
-        //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //             .ToList();
-        //     }
-        //     return new List<SyntaxToken>();
-        // }
-
-        // public List<SyntaxToken> invocationHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     // The invocation's result flows into whatever receives it (walk up to find assignment/declarator)
-        //     var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-        //     if (declarator != null)
-        //     {
-        //         // e.g. var response = await _httpClient.GetStringAsync(url);
-        //         // → "response" is what the data flows into
-        //         return new List<SyntaxToken> { declarator.Identifier };
-        //     }
-
-        //     var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
-        //     if (assignment != null)
-        //     {
-        //         return assignment.Right.DescendantTokens()
-        //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //             .ToList();
-        //     }
-
-        //     // Invocation result is discarded (e.g. Console.WriteLine) — nothing flows out
-        //     return new List<SyntaxToken>();
-        // }
-
-        // public List<SyntaxToken> InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     // The interpolation contributes to the string being built — walk up to find
-        //     // the variable that string is assigned to
-        //     var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-        //     if (declarator != null)
-        //     {
-        //         return new List<SyntaxToken> { declarator.Identifier };
-        //     }
-
-        //     var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
-        //     if (assignment != null)
-        //     {
-        //         return assignment.Right.DescendantTokens()
-        //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //             .ToList();
-        //     }
-
-        //     return new List<SyntaxToken>();
-        // }
-
-        // public List<SyntaxToken> memberAccessHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     bool parentIsInvocation = node.Parent is InvocationExpressionSyntax;
-        //     if (parentIsInvocation)
-        //     {
-        //         return invocationHandler(tree, idTokens, node.Parent!);
-        //     }
-        //     // For field/property access not used in invocation, walk up
-        //     var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-        //     if (declarator != null)
-        //     {
-        //         return new List<SyntaxToken> { declarator.Identifier };
-        //     }
-        //     return new List<SyntaxToken>();
-        // }
-
-
     }
 }

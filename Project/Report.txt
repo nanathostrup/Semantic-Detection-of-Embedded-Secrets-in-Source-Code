@@ -23,4 +23,3 @@ An unused environment variable is detected in file WeatherSimple\Services\Weathe
 An unused environment variable is detected in file WeatherSimple\Services\WeatherSimple.env on line 35 and has a score of 10. This string is long and has high entropy. 
 An unused environment variable is detected in file WeatherSimple\Services\WeatherSimple.env on line 36 and has a score of 10. This string is long and has high entropy. 
 An unused environment variable is detected in file WeatherSimple\Services\WeatherSimple.env on line 37 and has a score of 0. 
-An unused environment variable is detected in file WeatherSimple\Services\WeatherSimple.env on line 40 and has a score of 0. 
