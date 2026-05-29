@@ -82,7 +82,7 @@ namespace Project.SecretDetection.Semantics{
                     idTokens.Add(f, new List<SyntaxToken>());
                 }
             }
-            
+
             //FILTER OUT TOKENS THAT DO NOT HAVE A DIRECT CONNECTION!
 
 
@@ -117,6 +117,10 @@ namespace Project.SecretDetection.Semantics{
 
                 if(!visited.Contains(kv.Key)){ //avoids recomputing if we check for already visited tokens
                     List<SyntaxToken> someName = howIsVariableUsed(tree, new List<SyntaxToken>(), key.Parent!);
+                    someName = someName
+                        .Where(t => HasDirectConnection(key, t))
+                        .ToList();
+                    
                     value.AddRange(someName);
                     if (value.Contains(key))
                     {
@@ -133,6 +137,7 @@ namespace Project.SecretDetection.Semantics{
             }
 
             //Add the values as new keys in newFinds unless they already exist as keys
+            var model = compilation.GetSemanticModel(tree);
             List<SyntaxToken> additions = new List<SyntaxToken>();
             foreach(var kv in newFinds)
             {
@@ -141,41 +146,23 @@ namespace Project.SecretDetection.Semantics{
                     if (!newFinds.Keys.Contains(value))
                     {
                         additions.Add(value);
+
+                        // {
+                        // var symbol = model.GetDeclaredSymbol(value.Parent!) ?? model.GetSymbolInfo(value.Parent!).Symbol;
+                        // if(symbol == null) continue;
+                        // if(symbol.Kind != SymbolKind.Local && 
+                        //     symbol.Kind != SymbolKind.Field && 
+                        //     symbol.Kind != SymbolKind.Parameter)
+                        // {
+                        //     continue;
+                        // }
+                        // additions.Add(value);
+                        
+            // }
                     }
                 }
             }
-            // var model = compilation.GetSemanticModel(tree);
-            // foreach (var add in additions)
-            // {
-            //     var originalSymbol = model.GetSymbolInfo(add.Parent!).Symbol
-            //                     ?? model.GetDeclaredSymbol(add.Parent!);
-                
-            //     if (originalSymbol == null || 
-            //         (originalSymbol.Kind != SymbolKind.Local && 
-            //         originalSymbol.Kind != SymbolKind.Field &&
-            //         originalSymbol.Kind != SymbolKind.Parameter))
-            //     {
-            //         // Still add the token itself, just don't expand usages
-            //         if (!newFinds.ContainsKey(add))
-            //             newFinds[add] = new List<SyntaxToken>();
-            //         continue;
-            //     }
-
-            //     var allOccurrences = tree.GetRoot().DescendantTokens()
-            //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
-            //         .Where(t => {
-            //             var sym = model.GetSymbolInfo(t.Parent!).Symbol
-            //                 ?? model.GetDeclaredSymbol(t.Parent!);
-            //             return SymbolEqualityComparer.Default.Equals(sym, originalSymbol);
-            //         });
-
-            //     foreach (var occurrence in allOccurrences)
-            //     {
-            //         if (!newFinds.ContainsKey(occurrence))
-            //             newFinds[occurrence] = new List<SyntaxToken>();
-            //     }
-            // }
-
+           
             foreach (var add in additions)
             {
                 newFinds[add] = new List<SyntaxToken>();
@@ -240,7 +227,7 @@ namespace Project.SecretDetection.Semantics{
                 //     continue;
 
                 // Resolve original symbol
-                var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!);
+                var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!) ?? model.GetSymbolInfo(idToken.Parent!).Symbol;
                     // GetSymbol(model, idToken.Parent!);
 
                 // if (originalSymbol == null)
@@ -251,7 +238,7 @@ namespace Project.SecretDetection.Semantics{
                     .OfType<IdentifierNameSyntax>()
                     .Where(identifier =>
                     {
-                        var symbol = model.GetDeclaredSymbol(identifier);
+                        var symbol = model.GetDeclaredSymbol(identifier) ?? model.GetSymbolInfo(identifier.Parent!).Symbol;
                             // GetSymbol(model, identifier);
 
                         return SymbolEqualityComparer.Default.Equals(symbol,originalSymbol!);
@@ -419,50 +406,50 @@ namespace Project.SecretDetection.Semantics{
             }
         }
 
-        public List<SyntaxToken> memberAccessHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        {
-            bool parentIsInvocation = node.Parent is InvocationExpressionSyntax;
-            if (parentIsInvocation)
-            {
-                return invocationHandler(tree, idTokens, node.Parent!);
-            }
-            //HANDLE OTHER CASES OF THIS INSTANCE
-            // return idTokens;
-            var newIdTokens = node.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
-                .ToList();
+        // public List<SyntaxToken> memberAccessHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        // {
+        //     bool parentIsInvocation = node.Parent is InvocationExpressionSyntax;
+        //     if (parentIsInvocation)
+        //     {
+        //         return invocationHandler(tree, idTokens, node.Parent!);
+        //     }
+        //     //HANDLE OTHER CASES OF THIS INSTANCE
+        //     // return idTokens;
+        //     var newIdTokens = node.DescendantTokens()
+        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
+        //         .ToList();
 
-            return newIdTokens;
+        //     return newIdTokens;
 
-        }
-        public List<SyntaxToken> invocationHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        {
-            // we look at the arguments that go into the invocation method only. 
-            // Not the other stuff. This can be reevaluated for the future, but for the sake of this project it does not make sense. Time is also ticking:)))))
-            // FAKTISK : implementer for alle børn for hvis der er en metode der skal traces, så bliver den det ikke her...
-            // if(node is InvocationExpressionSyntax invocation)
-            // {
-            //     var newIdTokens = invocation.ArgumentList
-            //         .Arguments
-            //         .Select(t => t.Expression)
-            //         .OfType<IdentifierNameSyntax>()
-            //         .Select(t => t.Identifier)
-            //         .ToList();
+        // }
+        // public List<SyntaxToken> invocationHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        // {
+        //     // we look at the arguments that go into the invocation method only. 
+        //     // Not the other stuff. This can be reevaluated for the future, but for the sake of this project it does not make sense. Time is also ticking:)))))
+        //     // FAKTISK : implementer for alle børn for hvis der er en metode der skal traces, så bliver den det ikke her...
+        //     // if(node is InvocationExpressionSyntax invocation)
+        //     // {
+        //     //     var newIdTokens = invocation.ArgumentList
+        //     //         .Arguments
+        //     //         .Select(t => t.Expression)
+        //     //         .OfType<IdentifierNameSyntax>()
+        //     //         .Select(t => t.Identifier)
+        //     //         .ToList();
 
-            //     return newIdTokens;
-            // }
-            // //To handle other cases
-            // return idTokens;
-            // var newIdTokens = node.DescendantNodes()
-            //     .Where(t=> t.IsKind(SyntaxKind.TypeArgumentList));
-            //     return 
+        //     //     return newIdTokens;
+        //     // }
+        //     // //To handle other cases
+        //     // return idTokens;
+        //     // var newIdTokens = node.DescendantNodes()
+        //     //     .Where(t=> t.IsKind(SyntaxKind.TypeArgumentList));
+        //     //     return 
 
-            var newIdTokens = node.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
-                .ToList();
+        //     var newIdTokens = node.DescendantTokens()
+        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
+        //         .ToList();
 
-            return newIdTokens;
-        }
+        //     return newIdTokens;
+        // }
         
         //The next couple of functions are identical except for their name
         // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
@@ -497,25 +484,136 @@ namespace Project.SecretDetection.Semantics{
             return newIdTokens;
         }
 
+        // public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        // {
+        //     var newIdTokens = node.DescendantTokens()
+        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+        //         .ToList();
+
+        //     return newIdTokens;
+        // }
+        
+        // public List<SyntaxToken>  InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        // {            
+        //     var newIdTokens = node.DescendantTokens()
+        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+        //         .ToList();
+
+        //     return newIdTokens;
+
+
+        //     // return idTokens;
+        // }
+        // After computing newFinds, filter out tokens without a direct connection
+        private bool HasDirectConnection(SyntaxToken sourceKey, SyntaxToken candidate)
+        {
+            var parent = sourceKey.Parent;
+            if (parent == null) return false;
+
+            // Walk up to find the containing statement/expression
+            var containingNode = (SyntaxNode?)parent.FirstAncestorOrSelf<StatementSyntax>()?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
+                // var containingNode = parent.FirstAncestorOrSelf<StatementSyntax>() ?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
+            
+            if (containingNode == null) return false;
+
+            // Case 1: candidate is the LHS of an assignment where source is on RHS
+            if (containingNode is ExpressionStatementSyntax exprStmt &&
+                exprStmt.Expression is AssignmentExpressionSyntax assignment)
+            {
+                bool sourceIsOnRhs = assignment.Right.DescendantTokens()
+                    .Any(t => t.IsEquivalentTo(sourceKey));
+                bool candidateIsOnLhs = assignment.Left.DescendantTokens()
+                    .Any(t => t.IsEquivalentTo(candidate));
+                return sourceIsOnRhs && candidateIsOnLhs;
+            }
+
+            // Case 2: candidate is a variable being declared with source on the RHS
+            var declarator = parent.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+            if (declarator?.Initializer != null)
+            {
+                bool sourceIsInInitializer = declarator.Initializer.DescendantTokens()
+                    .Any(t => t.IsEquivalentTo(sourceKey));
+                bool candidateIsTheDeclaredName = declarator.Identifier.IsEquivalentTo(candidate);
+                return sourceIsInInitializer && candidateIsTheDeclaredName;
+            }
+
+            // Case 3: source is passed as an argument to a method — candidate is that invocation's result variable
+            // (this is harder to resolve without semantic model; skip for now or handle separately)
+
+            return false;
+        }
         public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
         {
-            var newIdTokens = node.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-                .ToList();
-
-            return newIdTokens;
+            if (node is AssignmentExpressionSyntax assignment)
+            {
+                // Only return the LHS — that's where the data flows TO
+                return assignment.Left.DescendantTokens()
+                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                    .ToList();
+            }
+            return new List<SyntaxToken>();
         }
-        
-        public List<SyntaxToken>  InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        {            
-            var newIdTokens = node.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-                .ToList();
 
-            return newIdTokens;
+        public List<SyntaxToken> invocationHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        {
+            // The invocation's result flows into whatever receives it (walk up to find assignment/declarator)
+            var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+            if (declarator != null)
+            {
+                // e.g. var response = await _httpClient.GetStringAsync(url);
+                // → "response" is what the data flows into
+                return new List<SyntaxToken> { declarator.Identifier };
+            }
 
+            var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
+            if (assignment != null)
+            {
+                return assignment.Left.DescendantTokens()
+                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                    .ToList();
+            }
 
-            // return idTokens;
+            // Invocation result is discarded (e.g. Console.WriteLine) — nothing flows out
+            return new List<SyntaxToken>();
         }
+
+        public List<SyntaxToken> InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        {
+            // The interpolation contributes to the string being built — walk up to find
+            // the variable that string is assigned to
+            var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+            if (declarator != null)
+            {
+                return new List<SyntaxToken> { declarator.Identifier };
+            }
+
+            var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
+            if (assignment != null)
+            {
+                return assignment.Left.DescendantTokens()
+                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                    .ToList();
+            }
+
+            return new List<SyntaxToken>();
+        }
+
+        public List<SyntaxToken> memberAccessHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        {
+            bool parentIsInvocation = node.Parent is InvocationExpressionSyntax;
+            if (parentIsInvocation)
+            {
+                return invocationHandler(tree, idTokens, node.Parent!);
+            }
+            // For field/property access not used in invocation, walk up
+            var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+            if (declarator != null)
+            {
+                return new List<SyntaxToken> { declarator.Identifier };
+            }
+            return new List<SyntaxToken>();
+        }
+
+
     }
 }
