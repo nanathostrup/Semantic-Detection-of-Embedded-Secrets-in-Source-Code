@@ -86,14 +86,14 @@ namespace Project.SecretDetection{
             //     Console.WriteLine("HTTPS TOKEN: " + id);
             // }
 
-            List<SyntaxToken> httper = findHttpInTree(trees[1],"HttpClient");
+            List<SyntaxToken> httper = findHttpInTree(trees[3],"HttpClient");
             foreach(var http in httper)
             {
                 Console.WriteLine("HTTPS: " + http);
             }
 
-            dfa.initDataflow2(trees[1], httper);
-            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees[1], httper);
+            dfa.initDataflow2(trees[3], httper);
+            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees[3], httper);
 
 
             foreach (var kvp in dfaTest)

@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Reflection;
-
+using Microsoft.CodeAnalysis.Text;
 
 namespace Project.SecretDetection.Semantics{
     class DataFlowAnalyzer2
@@ -42,16 +42,27 @@ namespace Project.SecretDetection.Semantics{
             var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
             var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
             var model = compilation.GetSemanticModel(tree);
+            
+            // var sourceText = tree.GetText;
+            // int maxSpanStart = idTokens.Max(t=>t.SpanStart);
+            // var line = sourceText.Lines.GetLineFromPosition(maxSpanStart);
+            // int searchBoundary = line.End; // end of that line
+            int maxSpanStart = idTokens.Max(t => t.SpanStart);
+            var location = tree.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(maxSpanStart, 0));
+            var lineSpan = location.GetLineSpan();
+            int lineIndex = lineSpan.StartLinePosition.Line;
+            int searchBoundary = tree.GetText().Lines[lineIndex].End;
+
 
             foreach (var token in idTokens)
             {
                 dict[token] = new List<SyntaxToken>();
             }
             List<SyntaxToken> visited = new List<SyntaxToken>();
-            return dataflowAnalysis(tree, dict, visited, compilation);//, 0);
+            return dataflowAnalysis(tree, dict, visited, compilation, searchBoundary);//, 0);
         }
 
-        public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
+        public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
         {
             //we look into all id tokens
             //then for each id token we look through all trees
@@ -74,7 +85,7 @@ namespace Project.SecretDetection.Semantics{
             {
                 lookFor.Add(kv.Key);
             }
-            List<SyntaxToken> foundInTrees = getIdTokenInTree(tree, lookFor, compilation);
+            List<SyntaxToken> foundInTrees = getIdTokenInTree(tree, lookFor, compilation, searchBoundary);
             foreach(var f in foundInTrees)
             {
                 if (!idTokens.Keys.Contains(f))
@@ -186,7 +197,7 @@ namespace Project.SecretDetection.Semantics{
             else
             {
                 // counter ++; //til debugging
-                return dataflowAnalysis(tree, newFinds, visited, compilation);//, counter);
+                return dataflowAnalysis(tree, newFinds, visited, compilation, searchBoundary);//, counter);
             }
         }
         public bool IsFieldDeclaration(SyntaxToken token, SemanticModel model)
@@ -263,7 +274,7 @@ namespace Project.SecretDetection.Semantics{
 
         //     return matchingTokens;
         //     }    
-        public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation)
+        public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation, int searchBoundary)
         {
             var foundInTree = new List<SyntaxToken>();
 
@@ -286,11 +297,14 @@ namespace Project.SecretDetection.Semantics{
                 //    originalSymbol!.Kind != SymbolKind.Field &&
                 //    originalSymbol!.Kind != SymbolKind.Parameter) continue;
 
+                var declarationSpan =  originalSymbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax().SpanStart ?? idToken.SpanStart;
 
-                // Find ALL references/usages
+                // Find ALL references/usages -- Within the boundaries.
                 var matches = root.DescendantNodes()
                     .OfType<IdentifierNameSyntax>()
-                    .Where(identifier => identifier.SpanStart <= idToken.SpanStart)
+                    .Where(identifier => identifier.SpanStart <= searchBoundary)
+
+                    // .Where(identifier => identifier.SpanStart <= idToken.SpanStart)
                     .Where(identifier =>
                     {
                         var symbol = model.GetDeclaredSymbol(identifier) ?? model.GetSymbolInfo(identifier.Parent!).Symbol;
@@ -300,94 +314,10 @@ namespace Project.SecretDetection.Semantics{
                     .Select(identifier => identifier.Identifier);
 
                 foundInTree.AddRange(matches);
-
-                // OPTIONAL:
-                // Also include declaration token itself
-                // foundInTree.Add(idToken);
             }
 
             return foundInTree.Distinct().ToList();
         }
- 
-            // List<SyntaxToken> foundInTree = new List<SyntaxToken>();
-            // foreach (var idToken in idTokens)
-            // {
-            //     var root = tree.GetRoot();
-            //     var model = compilation.GetSemanticModel(tree);
-
-            //     var originalSymbol =
-            //         model.GetSymbolInfo(idToken.Parent!).Symbol;
-
-            //     if (originalSymbol == null)
-            //         return new List<SyntaxToken>();
-
-            //     var matchingTokens = root.DescendantNodes()
-            //         .OfType<IdentifierNameSyntax>()
-            //         .Where(id =>
-            //         {
-            //             var symbol = model.GetSymbolInfo(id).Symbol;
-
-            //             return SymbolEqualityComparer.Default.Equals(
-            //                 symbol,
-            //                 originalSymbol);
-            //         })
-            //         .Select(id => id.Identifier)
-            //         .ToList();
-                
-                // foundInTree.AddRange(matchingTokens);
-                // var sourceModel = compilation.GetSemanticModel(idToken.Parent!.SyntaxTree);
-
-                //  for (int i = 0; i < trees.Count; i++)
-                //     {
-                        // var model = compilation.GetSemanticModel(tree);
-                        // SyntaxNode root = tree.GetRoot();
-                        // var matchingTokens = root.DescendantTokens()
-                            // .Where(t => 
-                                    // t.IsKind(SyntaxKind.IdentifierToken) &&
-                //                         // (AssemblyName.GetAssemblyName(t.ValueText)==AssemblyName.GetAssemblyName(idToken.Text)))
-                //                         // (Assembly.FullName.ToString(t) == Assembly.FullName.ToString(idToken)))
-                                        // t.Text == idToken.Text) //SYNDEREN
-                //                     // var symbol=model.GetSymbolInfo(t).Symbol
-                //                     // SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(t.Parent!).Symbol, sourceModel.GetSymbolInfo(idToken.Parent!).Symbol))
-                //                     // (model.GetDeclaredSymbol(t!.Parent!).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == model.GetDeclaredSymbol(idToken!.Parent!).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
-                //                     // (model.GetSymbolInfo(t.Parent!).Symbol!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == model.GetSymbolInfo(idToken.Parent!).Symbol!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)) 
-                                // )
-                            // .ToList();
-                            // {
-                            //     if (!t.IsKind(SyntaxKind.IdentifierToken))
-                            //         return false;
-
-                            //     var symbol1 = model.GetSymbolInfo(t.Parent!).Symbol;
-                            //     var symbol2 = model.GetSymbolInfo(idToken.Parent!).Symbol;
-
-                            //     if (symbol1 == null || symbol2 == null)
-                            //         return false;
-
-
-                            //     return SymbolEqualityComparer.Default.Equals(symbol1, symbol2);
-                            //     // return symbol1.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                            //         // == symbol2.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                            // })
-                        //     .ToList();
-                        // foundInTree.AddRange(matchingTokens);
-                    // }
-
-
-                // for (int i = 0; i < trees.Count; i++)
-                //     {
-                //         SyntaxNode root = trees[i].GetRoot();
-                //         var matchingTokens = root.DescendantTokens()
-                //             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
-                //                         // (AssemblyName.GetAssemblyName(t.ValueText)==AssemblyName.GetAssemblyName(idToken.Text)))
-                //                         // (Assembly.FullName.ToString(t) == Assembly.FullName.ToString(idToken)))
-                //                         t.Text == idToken.Text) //SYNDEREN
-                //             .ToList();
-
-                //         foundInTree.AddRange(matchingTokens);
-                //     }
-        //     }
-        //     return foundInTree;
-        // }
 
         public bool areEqual(Dictionary<SyntaxToken, List<SyntaxToken>> dict1 , Dictionary<SyntaxToken, List<SyntaxToken>> dict2)
         {
@@ -543,7 +473,7 @@ namespace Project.SecretDetection.Semantics{
             return newIdTokens;
 
 
-            return idTokens;
+            // return idTokens;
         }
 //         public List<SyntaxToken> InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
 // {
@@ -566,43 +496,43 @@ namespace Project.SecretDetection.Semantics{
 // }
 
         // After computing newFinds, filter out tokens without a direct connection
-        private bool HasDirectConnection(SyntaxToken sourceKey, SyntaxToken candidate)
-        {
-            var parent = sourceKey.Parent;
-            if (parent == null) return false;
+        // private bool HasDirectConnection(SyntaxToken sourceKey, SyntaxToken candidate)
+        // {
+        //     var parent = sourceKey.Parent;
+        //     if (parent == null) return false;
 
-            // Walk up to find the containing statement/expression
-            var containingNode = (SyntaxNode?)parent.FirstAncestorOrSelf<StatementSyntax>()?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
-                // var containingNode = parent.FirstAncestorOrSelf<StatementSyntax>() ?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
+        //     // Walk up to find the containing statement/expression
+        //     var containingNode = (SyntaxNode?)parent.FirstAncestorOrSelf<StatementSyntax>()?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
+        //         // var containingNode = parent.FirstAncestorOrSelf<StatementSyntax>() ?? parent.FirstAncestorOrSelf<ExpressionSyntax>();
             
-            if (containingNode == null) return false;
+        //     if (containingNode == null) return false;
 
-            // Case 1: candidate is the LHS of an assignment where source is on RHS
-            if (containingNode is ExpressionStatementSyntax exprStmt &&
-                exprStmt.Expression is AssignmentExpressionSyntax assignment)
-            {
-                bool sourceIsOnRhs = assignment.Right.DescendantTokens()
-                    .Any(t => t.IsEquivalentTo(sourceKey));
-                bool candidateIsOnLhs = assignment.Right.DescendantTokens()
-                    .Any(t => t.IsEquivalentTo(candidate));
-                return sourceIsOnRhs && candidateIsOnLhs;
-            }
+        //     // Case 1: candidate is the LHS of an assignment where source is on RHS
+        //     if (containingNode is ExpressionStatementSyntax exprStmt &&
+        //         exprStmt.Expression is AssignmentExpressionSyntax assignment)
+        //     {
+        //         bool sourceIsOnRhs = assignment.Right.DescendantTokens()
+        //             .Any(t => t.IsEquivalentTo(sourceKey));
+        //         bool candidateIsOnLhs = assignment.Right.DescendantTokens()
+        //             .Any(t => t.IsEquivalentTo(candidate));
+        //         return sourceIsOnRhs && candidateIsOnLhs;
+        //     }
 
-            // Case 2: candidate is a variable being declared with source on the RHS
-            var declarator = parent.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-            if (declarator?.Initializer != null)
-            {
-                bool sourceIsInInitializer = declarator.Initializer.DescendantTokens()
-                    .Any(t => t.IsEquivalentTo(sourceKey));
-                bool candidateIsTheDeclaredName = declarator.Identifier.IsEquivalentTo(candidate);
-                return sourceIsInInitializer && candidateIsTheDeclaredName;
-            }
+        //     // Case 2: candidate is a variable being declared with source on the RHS
+        //     var declarator = parent.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+        //     if (declarator?.Initializer != null)
+        //     {
+        //         bool sourceIsInInitializer = declarator.Initializer.DescendantTokens()
+        //             .Any(t => t.IsEquivalentTo(sourceKey));
+        //         bool candidateIsTheDeclaredName = declarator.Identifier.IsEquivalentTo(candidate);
+        //         return sourceIsInInitializer && candidateIsTheDeclaredName;
+        //     }
 
-            // Case 3: source is passed as an argument to a method — candidate is that invocation's result variable
-            // (this is harder to resolve without semantic model; skip for now or handle separately)
+        //     // Case 3: source is passed as an argument to a method — candidate is that invocation's result variable
+        //     // (this is harder to resolve without semantic model; skip for now or handle separately)
 
-            return false;
-        }
+        //     return false;
+        // }
 
 //         public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
 // {
