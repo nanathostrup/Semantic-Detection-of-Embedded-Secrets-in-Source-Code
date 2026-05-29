@@ -397,7 +397,7 @@ namespace Project.SecretDetection.Semantics{
         {
             // we look at the arguments that go into the invocation method only. 
             // Not the other stuff. This can be reevaluated for the future, but for the sake of this project it does not make sense. Time is also ticking:)))))
-            //FAKTISK : implementer for alle børn for hvis der er en metode der skal traces, så bliver den det ikke her...
+            // FAKTISK : implementer for alle børn for hvis der er en metode der skal traces, så bliver den det ikke her...
             // if(node is InvocationExpressionSyntax invocation)
             // {
             //     var newIdTokens = invocation.ArgumentList
@@ -423,14 +423,26 @@ namespace Project.SecretDetection.Semantics{
         }
         
         //The next couple of functions are identical except for their name
+        // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        // {
+        //     //Kan laves til endnu en switch case med afarter af delcarators
+        //     var newIdTokens = node.DescendantTokens()
+        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
+        //         .ToList();
+
+        //     return newIdTokens;
+        // }
         public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
         {
-            //Kan laves til endnu en switch case med afarter af delcarators
-            var newIdTokens = node.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
-                .ToList();
-
-            return newIdTokens;
+            if (node is VariableDeclaratorSyntax declarator && declarator.Initializer != null)
+            {
+                // Only trace the right-hand side, not the declared name itself
+                var newIdTokens = declarator.Initializer.DescendantTokens()
+                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                    .ToList();
+                return newIdTokens;
+            }
+            return new List<SyntaxToken>();
         }
 
 
@@ -453,8 +465,15 @@ namespace Project.SecretDetection.Semantics{
         }
         
         public List<SyntaxToken>  InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        {
-            return idTokens;
+        {            
+            var newIdTokens = node.DescendantTokens()
+                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                .ToList();
+
+            return newIdTokens;
+
+
+            // return idTokens;
         }
     }
 }
