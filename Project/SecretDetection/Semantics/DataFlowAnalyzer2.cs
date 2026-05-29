@@ -165,6 +165,9 @@ namespace Project.SecretDetection.Semantics{
             {
                 newFinds[add] = new List<SyntaxToken>();
             }
+            newFinds = newFinds
+                .Where(kv=> !IsFieldDeclaration(kv.Key, model))
+                .ToDictionary(kv=> kv.Key, kv => kv.Value);
 
             //check if idTokens and newFinds are the same - if they are the analysis did not add anything and we can end the function
             bool equal = areEqual(newFinds, idTokens);
@@ -178,7 +181,11 @@ namespace Project.SecretDetection.Semantics{
                 return dataflowAnalysis(tree, newFinds, visited, compilation);//, counter);
             }
         }
-
+        public bool IsFieldDeclaration(SyntaxToken token, SemanticModel model)
+        {
+            var symbol = model.GetDeclaredSymbol(token.Parent!);
+            return symbol?.Kind == SymbolKind.Field;
+        }
 
         // public List<SyntaxToken> getIdTokenInTree(SyntaxTree tree, List<SyntaxToken> idTokens, CSharpCompilation compilation) // RETHINK THiS METHOD
         // {
