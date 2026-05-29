@@ -290,6 +290,7 @@ namespace Project.SecretDetection.Semantics{
                 // Find ALL references/usages
                 var matches = root.DescendantNodes()
                     .OfType<IdentifierNameSyntax>()
+                    .Where(identifier => identifier.SpanStart <= idToken.SpanStart)
                     .Where(identifier =>
                     {
                         var symbol = model.GetDeclaredSymbol(identifier) ?? model.GetSymbolInfo(identifier.Parent!).Symbol;
@@ -505,15 +506,15 @@ namespace Project.SecretDetection.Semantics{
         }
         
         //The next couple of functions are identical except for their name
-        // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     //Kan laves til endnu en switch case med afarter af delcarators
-        //     var newIdTokens = node.DescendantTokens()
-        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
-        //         .ToList();
+        public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        {
+            //Kan laves til endnu en switch case med afarter af delcarators
+            var newIdTokens = node.DescendantTokens()
+                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
+                .ToList();
 
-        //     return newIdTokens;
-        // }
+            return newIdTokens;
+        }
 
         public List<SyntaxToken> expressionStatementHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
         {
@@ -524,45 +525,45 @@ namespace Project.SecretDetection.Semantics{
             return newIdTokens;
         }
 
-        // public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {
-        //     var newIdTokens = node.DescendantTokens()
-        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //         .ToList();
+        public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        {
+            var newIdTokens = node.DescendantTokens()
+                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                .ToList();
 
-        //     return newIdTokens;
-        // }
+            return newIdTokens;
+        }
         
-        // public List<SyntaxToken>  InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-        // {            
-        //     var newIdTokens = node.DescendantTokens()
-        //         .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-        //         .ToList();
+        public List<SyntaxToken>  InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+        {            
+            var newIdTokens = node.DescendantTokens()
+                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+                .ToList();
 
-        //     return newIdTokens;
+            return newIdTokens;
 
 
-            // return idTokens;
-        // }
-        public List<SyntaxToken> InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-{
-    // Walk up to find what variable the whole interpolated string is assigned to
-    var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-    if (declarator != null)
-    {
-        return new List<SyntaxToken> { declarator.Identifier };
-    }
+            return idTokens;
+        }
+//         public List<SyntaxToken> InterpolationSyntaxHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+// {
+//     // Walk up to find what variable the whole interpolated string is assigned to
+//     var declarator = node.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+//     if (declarator != null)
+//     {
+//         return new List<SyntaxToken> { declarator.Identifier };
+//     }
 
-    var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
-    if (assignment != null)
-    {
-        return assignment.Left.DescendantTokens()
-            .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
-            .ToList();
-    }
+//     var assignment = node.FirstAncestorOrSelf<AssignmentExpressionSyntax>();
+//     if (assignment != null)
+//     {
+//         return assignment.Left.DescendantTokens()
+//             .Where(t => t.IsKind(SyntaxKind.IdentifierToken))
+//             .ToList();
+//     }
 
-    return new List<SyntaxToken>();
-}
+//     return new List<SyntaxToken>();
+// }
 
         // After computing newFinds, filter out tokens without a direct connection
         private bool HasDirectConnection(SyntaxToken sourceKey, SyntaxToken candidate)
@@ -603,26 +604,26 @@ namespace Project.SecretDetection.Semantics{
             return false;
         }
 
-        public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-{
-    if (node is VariableDeclaratorSyntax declarator)
-    {
-        // Only return the identifier being declared — that's where data flows TO
-        return new List<SyntaxToken> { declarator.Identifier };
-    }
-    return new List<SyntaxToken>();
-}
-public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
-{
-    if (node is AssignmentExpressionSyntax assignment)
-    {
-        // Only return the LEFT side — where data flows TO
-        return assignment.Left.DescendantTokens()
-            .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
-            .ToList();
-    }
-    return new List<SyntaxToken>();
-}
+//         public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+// {
+//     if (node is VariableDeclaratorSyntax declarator)
+//     {
+//         // Only return the identifier being declared — that's where data flows TO
+//         return new List<SyntaxToken> { declarator.Identifier };
+//     }
+//     return new List<SyntaxToken>();
+// }
+// public List<SyntaxToken> assignmentExpressionHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
+// {
+//     if (node is AssignmentExpressionSyntax assignment)
+//     {
+//         // Only return the LEFT side — where data flows TO
+//         return assignment.Left.DescendantTokens()
+//             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))
+//             .ToList();
+//     }
+//     return new List<SyntaxToken>();
+// }
 
 
         // public List<SyntaxToken> variableDeclaratorHandler(SyntaxTree tree, List<SyntaxToken> idTokens, SyntaxNode node)
