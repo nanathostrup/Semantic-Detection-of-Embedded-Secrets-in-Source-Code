@@ -79,14 +79,16 @@ namespace Project.SecretDetection.Semantics{
 
                 foreach (var r in res)
                 {
+                    Console.WriteLine("\n" + r.Key);
+
                     //if idtoken in this tree
                         //if token is input in invocation syntax
                     if (r.Key.Parent?.SyntaxTree ==trees[i])
                     {
-                        var arg = r.Key.Parent?.Parent as ArgumentSyntax;          // IdentifierName -> Argument
+                        var arg = r.Key.Parent?.Parent as ArgumentSyntax;
                         if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
                         {
-                            
+                            Console.WriteLine(arg);
                             for (int j = 0; j < trees.Count; j++)
                             {
                             //if invocation is MADE/CREATED in another tree
@@ -95,10 +97,22 @@ namespace Project.SecretDetection.Semantics{
 
                                 if (i != j)
                                 {
-                                    //if(invocation method is declared in tree[j])
+                                    var methodSymbol = model.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+                                    if (methodSymbol == null) continue;   // didn't bind (e.g. framework method)
+
+                                    var declRef = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+                                    if (declRef == null) continue;        // no source — external/library method
+
+                                    // declRef.SyntaxTree is the tree where the method body lives.
+                                    if (declRef.SyntaxTree == trees[j])
                                     {
-                                        ;
+                                        Console.WriteLine("ITS FROM ANOTHER FILE: " + methodSymbol);
+                                        // invocation in trees[i] calls a method DECLARED in trees[j].
                                     }
+                                    //if(invocation method is declared in tree[j])
+                                    // {
+                                    //     ;
+                                    // }
                                 }
                             }
                         }
