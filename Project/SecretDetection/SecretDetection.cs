@@ -170,10 +170,10 @@ namespace Project.SecretDetection{
             //     // Get the root of the tree
             //     SyntaxNode root = tree.GetRoot();
             //     PrintNode(root, 0);
-            // // }
-            // SyntaxNode rooot = trees[1].GetRoot();
+            // }
+            // SyntaxNode rooot = trees[2].GetRoot();
             // PrintNode(rooot, 0);
-
+        
         }
 
         // public List<SyntaxToken> findHttpInTree(SyntaxTree tree, string HttpClient)

@@ -69,25 +69,40 @@ namespace Project.SecretDetection.Semantics{
             //hvis der er noget der flyder ud af et træ og ind i et andet, så skal man lave dataflow analyse på den variabel der flyder ind i træet
                 //vigtig note den variabel der flyder ud af et træ skal være en key i res.
 
-            var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-            var compilation = CSharpCompilation.Create("MyCompilation", syntaxTrees: trees, references: new[] { Mscorlib });
+            var Mscorlib1 = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+            var compilation1 = CSharpCompilation.Create("MyCompilation", syntaxTrees: trees, references: new[] { Mscorlib1 });
 
             for (int i=0; i < trees.Count;  i ++)
             {
                 var root = trees[i].GetRoot();
-                var model = compilation.GetSemanticModel(trees[i]);
+                var model = compilation1.GetSemanticModel(trees[i]);
 
                 foreach (var r in res)
                 {
                     //if idtoken in this tree
                         //if token is input in invocation syntax
+                    if (r.Key.Parent?.SyntaxTree ==trees[i])
+                    {
+                        var arg = r.Key.Parent?.Parent as ArgumentSyntax;          // IdentifierName -> Argument
+                        if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
+                        {
+                            
                             for (int j = 0; j < trees.Count; j++)
                             {
-                                //if i!=j
-                                    //if invocation is MADE/CREATED in another tree
-                                        //add the input r to the value for r
-                                        // run dataflow on the dicitonary
+                            //if invocation is MADE/CREATED in another tree
+                                //add the input r to the value for r
+                                // run dataflow on the dicitonary
+
+                                if (i != j)
+                                {
+                                    //if(invocation method is declared in tree[j])
+                                    {
+                                        ;
+                                    }
+                                }
                             }
+                        }
+                    }
                 }
             }
 
