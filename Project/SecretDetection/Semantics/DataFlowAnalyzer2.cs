@@ -28,7 +28,7 @@ namespace Project.SecretDetection.Semantics{
             foreach (var tree in trees)
             {
                 Console.WriteLine("tree");
-                    var treeTokens = idTokens
+                    var treeTokens = idTokens //vi vil være sikker på at vi kun kigger på de tokens der er tilstede i det aktuelle træ. Ellers crasher det
                         .Where(t => t.Parent?.SyntaxTree == tree)
                         .ToList();
                     if (!treeTokens.Any())
@@ -36,17 +36,6 @@ namespace Project.SecretDetection.Semantics{
                     dict = treeTokens.ToDictionary(
                         t => t,
                         t => new List<SyntaxToken>());
-                // foreach (var token in idTokens)
-                // {
-                //     if (token.Parent?.SyntaxTree != tree)
-                //     {
-                //         continue;
-                //     }                    
-                //     dict[token] = new List<SyntaxToken>();
-                // }
-                // dict = treeTokens.ToDictionary(
-                //     t => t,
-                //     t => new List<SyntaxToken>());
 
                 var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
                 var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
@@ -62,39 +51,47 @@ namespace Project.SecretDetection.Semantics{
                 int lineIndex = lineSpan.StartLinePosition.Line;
                 int searchBoundary = tree.GetText().Lines[lineIndex].End;
 
-                // foreach (var token in idTokens)
-                // {
-                //     if (token.Parent?.SyntaxTree != tree)
-                //     {
-                //         continue;
-                //     }                    
-                //     dict[token] = new List<SyntaxToken>();
-                // }
                 if (dict.Any())
                 {
                     List<SyntaxToken> visited = new List<SyntaxToken>();
                     Dictionary<SyntaxToken, List<SyntaxToken>> dataflowRes = dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model);//, 0);
                     res = res.Concat(dataflowRes).ToDictionary(x => x.Key, x => x.Value);
                 }
-            }
-            return res;
-            // var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-            // var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
-            // var model = compilation.GetSemanticModel(tree);
+                
+                //se om der er nogle keys der flyder ind i et andet træ og ud fra et andet træ.
+                //hvis så, hvilken key er det?
+                //apply dataflow analysis på den her key der flyder ind, i det træ            
             
-            // int maxSpanStart = idTokens.Max(t => t.SpanStart);
-            // var location = tree.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(maxSpanStart, 0));
-            // var lineSpan = location.GetLineSpan();
-            // int lineIndex = lineSpan.StartLinePosition.Line;
-            // int searchBoundary = tree.GetText().Lines[lineIndex].End;
+            }
 
+            //Dictionary res er færdig bygget her så vi kan bruge det på alle træerne og ser om der er noget der flyder ind og ud.
+            // vi vil se om der er nogle connections i mellem træer, så derfor er det vigtigt at hvert træ er færdig med sin analyse, så vi kan lave en bindeleds analyse
+            //hvis der er noget der flyder ud af et træ og ind i et andet, så skal man lave dataflow analyse på den variabel der flyder ind i træet
+                //vigtig note den variabel der flyder ud af et træ skal være en key i res.
 
-            // foreach (var token in idTokens)
-            // {
-            //     dict[token] = new List<SyntaxToken>();
-            // }
-            // List<SyntaxToken> visited = new List<SyntaxToken>();
-            // return dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model);//, 0);
+            var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+            var compilation = CSharpCompilation.Create("MyCompilation", syntaxTrees: trees, references: new[] { Mscorlib });
+
+            for (int i=0; i < trees.Count;  i ++)
+            {
+                var root = trees[i].GetRoot();
+                var model = compilation.GetSemanticModel(trees[i]);
+
+                foreach (var r in res)
+                {
+                    //if idtoken in this tree
+                        //if token is input in invocation syntax
+                            for (int j = 0; j < trees.Count; j++)
+                            {
+                                //if i!=j
+                                    //if invocation is MADE/CREATED in another tree
+                                        //add the input r to the value for r
+                                        // run dataflow on the dicitonary
+                            }
+                }
+            }
+
+            return res;
         }
 
         public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary, SemanticModel model)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
@@ -145,18 +142,6 @@ namespace Project.SecretDetection.Semantics{
                 if(!visited.Contains(kv.Key)){ //avoids recomputing if we check for already visited tokens
                     List<SyntaxToken> someName = howIsVariableUsed(tree, new List<SyntaxToken>(), key.Parent!);
                     
-                    // Console.WriteLine($"--------- \n key:{key.ValueText} | Parent type: {key.Parent!.GetType().Name}");
-                    // foreach (var t in someName)
-                    // {
-                    //     Console.WriteLine($"         candidate: {t.ValueText} | parentType: {t.Parent!.GetType().Name}");
-                    // }
-
-                    // Console.WriteLine("After has direct connection filter");
-                    // foreach(var t in someName)
-                    // {
-                    //     Console.WriteLine("   --> Kept: ", t.ValueText);
-                    // }
-
                     value.AddRange(someName);
                     if (value.Contains(key))
                     {
@@ -180,14 +165,6 @@ namespace Project.SecretDetection.Semantics{
                 {
                     if (!newFinds.Keys.Contains(value))
                     {
-                    // var symbol = model.GetDeclaredSymbol(value.Parent!) ?? model.GetSymbolInfo(value.Parent!).Symbol;
-                    // if(symbol == null) continue;
-                    // if(symbol.Kind != SymbolKind.Local && 
-                    //     symbol.Kind != SymbolKind.Field && 
-                    //     symbol.Kind != SymbolKind.Parameter)
-                    // {
-                        // continue;
-                    // }
                         additions.Add(value);
                     }
                 }
@@ -402,12 +379,13 @@ namespace Project.SecretDetection.Semantics{
 
                 return tokens;
             }
+            return idTokens;
             //To handle other cases
-            var toookens = node.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
-                .ToList();
+            // var toookens = node.DescendantTokens()
+            //     .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && !idTokens.Contains(t))// && t.ValueText != "city") // to make debugging easier
+            //     .ToList();
 
-            return toookens;
+            // return toookens;
         }
         
         //The next couple of functions are identical except for their name

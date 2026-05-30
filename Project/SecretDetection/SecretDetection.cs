@@ -66,7 +66,7 @@ namespace Project.SecretDetection{
             Console.WriteLine("");
             Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
             var httpDetector= new HttpDetector();
-            // List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[1] };
+            List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[2], trees[3] };
             var dfa = new DataFlowAnalyzer2();
             
 
@@ -79,14 +79,14 @@ namespace Project.SecretDetection{
             // var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { trees[1] }, references: new[] { Mscorlib });
             // var model = compilation.GetSemanticModel(tree);
 
-            List<SyntaxToken> httper = httpDetector.findHttpInTree(trees,"HttpClient");
+            List<SyntaxToken> httper = httpDetector.findHttpInTree(firstTree,"HttpClient");
             foreach(var http in httper)
             {
                 Console.WriteLine("HTTPS: " + http);
             }
 
             // dfa.initDataflow2(trees, httper);
-            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees, httper);
+            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(firstTree, httper);
 
 
             foreach (var kvp in dfaTest)
