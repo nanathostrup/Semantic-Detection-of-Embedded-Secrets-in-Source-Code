@@ -80,8 +80,84 @@ namespace Project.SecretDetection.Semantics{
                 //Foreach (var r in res)
                     //if r.key is input in invocation method
                         //if the method CREATED/DECLARED in another tree
-                            //find that methood usage, and input (all of the usages and the inpupts)
+                            //find that methood usage (invocations), and input (all of the usages and the inpupts)
                                 //apply dataflow on the inputs
+
+                foreach (var r in res)
+                {
+                    if (r.Key.Parent?.SyntaxTree != trees[i]) continue;  
+                    var arg = r.Key.Parent?.Parent as ArgumentSyntax;
+                    
+                    if (r.Key.Parent is not ParameterSyntax paramSyntax) continue;   // <-- parameter, not argument
+                    
+                    var model1 = compilation1.GetSemanticModel(paramSyntax.SyntaxTree);
+                    var paramSymbol = model1.GetDeclaredSymbol(paramSyntax) as IParameterSymbol;
+                    var methodSymbol = paramSymbol?.ContainingSymbol as IMethodSymbol;
+                    if (methodSymbol == null) continue;
+                    int idx = methodSymbol.Parameters.IndexOf(paramSymbol!);
+                    
+                    foreach (var other in trees)
+                    {
+                        if (other == paramSyntax.SyntaxTree) continue; //same tree
+                        var otherModel = compilation1.GetSemanticModel(other);
+                        
+                        //Find the invocationmethods in the other trees
+                        foreach (var inv in other.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
+                        {
+                            //if they are used in the other tree
+                            var called = otherModel.GetSymbolInfo(inv).Symbol as IMethodSymbol;
+                            if (!SymbolEqualityComparer.Default.Equals(called, methodSymbol)) continue;
+                            if (idx < 0 || idx >= inv.ArgumentList.Arguments.Count) continue;
+
+                            //Find the inputs to the usages
+                            var argExpr = inv.ArgumentList.Arguments[idx].Expression as IdentifierNameSyntax;
+                            if (argExpr == null) continue;
+                                //These inputs should then be traced with dataflow analysis again and set to be a key in the dataflow analysis 
+                                    //insert them to the value list to the r.key.
+                                        //apply dataflow analysis on the res again (which is ok and not too much because of visited list:) )
+
+                            Console.WriteLine("PARAM {1} <--- ARG {0}", paramSyntax.Identifier.ValueText,argExpr.Identifier.ValueText);
+                            // seed dataflow on argExpr.Identifier in `other` to reach secret1 = "Hello"
+                        }
+                    }
+                }
+            }
+            return res;
+        }
+
+                    // // if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
+                    //     var methodSymbol = model.GetSymbolInfo(paramSyntax).Symbol as IMethodSymbol;
+                    //     if (methodSymbol == null) continue;   // didn't bind (e.g. framework method)
+                    //         foreach (var other in trees)
+                    //         {
+                    //             var otherModel = compilation1.GetSemanticModel(other);
+
+                    //             foreach (var inv in other.GetRoot()
+                    //                                     .DescendantNodes()
+                    //                                     .OfType<InvocationExpressionSyntax>())
+                    //             {
+                    //                 var called = otherModel.GetSymbolInfo(inv).Symbol as IMethodSymbol;
+                    //                 if (!SymbolEqualityComparer.Default.Equals(called, methodSymbol)) continue;
+                    //                 if (inv == invocation) continue;          // skip the one we started from
+
+                    //                 Console.WriteLine($"CALLED in {System.IO.Path.GetFileName(other.FilePath)}: {inv}");
+                    //                 // inv is another call site of the same method.
+                    //             }
+                    //         }
+
+                        // declRef.SyntaxTree is the tree where the method body lives.
+                        // if (declRef.SyntaxTree == trees[j])
+                        // {
+                    //         Console.WriteLine("ITS FROM ANOTHER FILE: " + methodSymbol);
+                    //         // invocation in trees[i] calls a method DECLARED in trees[j].
+                    //     // }
+                    // }
+                    //     }
+                    // }
+            //     }
+            // }            
+        //     return res;
+        // }
 
 
 
@@ -131,10 +207,9 @@ namespace Project.SecretDetection.Semantics{
                 //         }
                 //     }
                 // }
-            }
-
-            return res;
-        }
+            // }
+        //     return res;
+        // }
 
         public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary, SemanticModel model)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
         {
