@@ -76,48 +76,61 @@ namespace Project.SecretDetection.Semantics{
             {
                 var root = trees[i].GetRoot();
                 var model = compilation1.GetSemanticModel(trees[i]);
+                
+                //Foreach (var r in res)
+                    //if r.key is input in invocation method
+                        //if the method CREATED/DECLARED in another tree
+                            //find that methood usage, and input (all of the usages and the inpupts)
+                                //apply dataflow on the inputs
 
-                foreach (var r in res)
-                {
-                    Console.WriteLine("\n" + r.Key);
 
-                    //if idtoken in this tree
-                        //if token is input in invocation syntax
-                    if (r.Key.Parent?.SyntaxTree ==trees[i])
-                    {
-                        var arg = r.Key.Parent?.Parent as ArgumentSyntax;
-                        if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
-                        {
-                            Console.WriteLine(arg);
-                            for (int j = 0; j < trees.Count; j++)
-                            {
-                            //if invocation is MADE/CREATED in another tree
-                                //add the input r to the value for r
-                                // run dataflow on the dicitonary
 
-                                if (i != j)
-                                {
-                                    var methodSymbol = model.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
-                                    if (methodSymbol == null) continue;   // didn't bind (e.g. framework method)
+                //For every invocation in the tree
+                    //if there is an inv created in another tree
+                        //is the arglist in idtokens? 
+                            //apply dataflow analysis on the arglist in 
 
-                                    var declRef = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-                                    if (declRef == null) continue;        // no source — external/library method
+                // foreach (var r in res)
+                // {
+                //     Console.WriteLine("\n" + r.Key);
 
-                                    // declRef.SyntaxTree is the tree where the method body lives.
-                                    if (declRef.SyntaxTree == trees[j])
-                                    {
-                                        Console.WriteLine("ITS FROM ANOTHER FILE: " + methodSymbol);
-                                        // invocation in trees[i] calls a method DECLARED in trees[j].
-                                    }
-                                    //if(invocation method is declared in tree[j])
-                                    // {
-                                    //     ;
-                                    // }
-                                }
-                            }
-                        }
-                    }
-                }
+                //     //if idtoken in this tree
+                //         //if token is input in invocation syntax
+                //     if (r.Key.Parent?.SyntaxTree ==trees[i])
+                //     {
+                //         var arg = r.Key.Parent?.Parent as ArgumentSyntax;
+                //         if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
+                //         {
+                //             Console.WriteLine(arg); // VI SKAL SE OM ALLE TOKENS DER LEDER FRA DEN HER KØRER IND I NOGET I ET ANDET TRÆ!
+                //             for (int j = 0; j < trees.Count; j++)
+                //             {
+                //             //if invocation is MADE/CREATED in another tree
+                //                 //add the input r to the value for r
+                //                 // run dataflow on the dicitonary
+
+                //                 if (i != j)
+                //                 {
+                //                     var methodSymbol = model.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
+                //                     if (methodSymbol == null) continue;   // didn't bind (e.g. framework method)
+
+                //                     var declRef = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+                //                     if (declRef == null) continue;        // no source — external/library method
+
+                //                     // declRef.SyntaxTree is the tree where the method body lives.
+                //                     if (declRef.SyntaxTree == trees[j])
+                //                     {
+                //                         Console.WriteLine("ITS FROM ANOTHER FILE: " + methodSymbol);
+                //                         // invocation in trees[i] calls a method DECLARED in trees[j].
+                //                     }
+                //                     //if(invocation method is declared in tree[j])
+                //                     // {
+                //                     //     ;
+                //                     // }
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
             }
 
             return res;
