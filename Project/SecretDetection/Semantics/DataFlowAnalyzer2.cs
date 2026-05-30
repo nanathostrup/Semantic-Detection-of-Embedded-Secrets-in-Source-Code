@@ -117,7 +117,7 @@ namespace Project.SecretDetection.Semantics{
                                         //apply dataflow analysis on the res again (which is ok and not too much because of visited list:) )
 
                             Console.WriteLine("PARAM {1} <--- ARG {0}", paramSyntax.Identifier.ValueText,argExpr.Identifier.ValueText);
-                            // seed dataflow on argExpr.Identifier in `other` to reach secret1 = "Hello"
+                            // dataflow on argExpr.Identifier in "other" to reach secret1 = "Hello"
                         }
                     }
                 }
