@@ -53,21 +53,21 @@ namespace Project.SecretDetection{
                 // Console.WriteLine("");
             }
             
-            Console.WriteLine("");
-            Console.WriteLine(" ================================= ENV CHECK ================================= ");
-            var envFileDetection = new EnvironmentFileDetection();
-            envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
+            // Console.WriteLine("");
+            // Console.WriteLine(" ================================= ENV CHECK ================================= ");
+            // var envFileDetection = new EnvironmentFileDetection();
+            // envFileDetection.handleDetection(trees, filePath, environmentVariableMap); // OUTCOMMENT WHEN DONE DEBUGGING
             
             
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /// DEBUGGING///
             
-            // Console.WriteLine("");
-            // Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
-            // var httpDetector= new HttpDetector();
+            Console.WriteLine("");
+            Console.WriteLine(" ================================= DATAFLOW ANALYSIS ================================= ");
+            var httpDetector= new HttpDetector();
             // List<SyntaxTree> firstTree = new List<SyntaxTree> { trees[1] };
-            // var dfa = new DataFlowAnalyzer2();
+            var dfa = new DataFlowAnalyzer2();
             
 
             // List<SyntaxToken> httper = httpDetector.whatIsVarInitializedAs(firstTree, "HttpClient");
@@ -79,33 +79,26 @@ namespace Project.SecretDetection{
             // var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { trees[1] }, references: new[] { Mscorlib });
             // var model = compilation.GetSemanticModel(tree);
 
+            List<SyntaxToken> httper = httpDetector.findHttpInTree(trees,"HttpClient");
+            foreach(var http in httper)
+            {
+                Console.WriteLine("HTTPS: " + http);
+            }
 
-            // List<SyntaxToken> idTokens = httpDetector.getIdTokenInTree(trees[1], httper, compilation);
-            // foreach(var id in idTokens)
-            // {
-            //     Console.WriteLine("HTTPS TOKEN: " + id);
-            // }
-
-            // List<SyntaxToken> httper = findHttpInTree(trees[3],"HttpClient");
-            // foreach(var http in httper)
-            // {
-            //     Console.WriteLine("HTTPS: " + http);
-            // }
-
-            // dfa.initDataflow2(trees[3], httper);
-            // Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees[3], httper);
+            // dfa.initDataflow2(trees, httper);
+            Dictionary<SyntaxToken, List<SyntaxToken>> dfaTest = dfa.initDataflow2(trees, httper);
 
 
-            // foreach (var kvp in dfaTest)
-            // {
-            //     SyntaxToken key = kvp.Key;
-            //     List<SyntaxToken> values = kvp.Value;
-            //     Console.WriteLine("Key: " + key);
-            //     foreach (var value in values)
-            //     {
-            //         Console.WriteLine($"       Value: {value}");
-            //     }
-            // }
+            foreach (var kvp in dfaTest)
+            {
+                SyntaxToken key = kvp.Key;
+                List<SyntaxToken> values = kvp.Value;
+                Console.WriteLine("Key: " + key);
+                foreach (var value in values)
+                {
+                    Console.WriteLine($"       Value: {value}");
+                }
+            }
 
 
 

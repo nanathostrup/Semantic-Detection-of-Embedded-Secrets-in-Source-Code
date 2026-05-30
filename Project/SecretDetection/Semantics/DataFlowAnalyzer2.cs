@@ -13,53 +13,88 @@ using Microsoft.CodeAnalysis.Text;
 namespace Project.SecretDetection.Semantics{
     class DataFlowAnalyzer2
     {
-        public Dictionary<SyntaxToken, List<SyntaxToken>> initDataflow2(SyntaxTree tree, List<SyntaxToken> idTokens)
+        public Dictionary<SyntaxToken, List<SyntaxToken>> initDataflow2(List<SyntaxTree> trees, List<SyntaxToken> idTokens)
         {
+            Console.WriteLine("DATAFLOW");
             //LAV EN DATAFLOW FOR HVER AF TRÆERNE
             //MED DATAFLOW FRA ROSLYN, SÅ BRUG FLOWSOUT FOR AT SE HVAD GÅR UD OG SE HVAD DER GÅR IND
                 //HVIS DER ER NOGEN DER MATCHES SÅ SKAL DER EN CONNECTION I MELLEM DEM I ENDELIG DICTIONARY
 
             //HUSK AT SØRG FOR AT TOKENS DER ER I INDPUTTET KUN BLIVER TJEKKET I DERES EGET TRÆ
 
-
-
             // List<SyntaxToken> foundInTrees = getIdTokenInTree(trees, idTokens);
             var dict = new Dictionary<SyntaxToken, List<SyntaxToken>>(); 
-            // var compilation = CSharpCompilation.Create(
-            //     assemblyName: "Analysis",
-            //     syntaxTrees: trees,
-            //     references: new[]
-            //     {
-            //         MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-
-            //         MetadataReference.CreateFromFile(
-            //             typeof(Console).Assembly.Location),
-
-            //         MetadataReference.CreateFromFile(
-            //             typeof(Enumerable).Assembly.Location)
-            //     });
-            
-            var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-            var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
-            var model = compilation.GetSemanticModel(tree);
-            
-            // var sourceText = tree.GetText;
-            // int maxSpanStart = idTokens.Max(t=>t.SpanStart);
-            // var line = sourceText.Lines.GetLineFromPosition(maxSpanStart);
-            // int searchBoundary = line.End; // end of that line
-            int maxSpanStart = idTokens.Max(t => t.SpanStart);
-            var location = tree.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(maxSpanStart, 0));
-            var lineSpan = location.GetLineSpan();
-            int lineIndex = lineSpan.StartLinePosition.Line;
-            int searchBoundary = tree.GetText().Lines[lineIndex].End;
-
-
-            foreach (var token in idTokens)
+            var res = new Dictionary<SyntaxToken, List<SyntaxToken>>();
+            foreach (var tree in trees)
             {
-                dict[token] = new List<SyntaxToken>();
+                Console.WriteLine("tree");
+                    var treeTokens = idTokens
+                        .Where(t => t.Parent?.SyntaxTree == tree)
+                        .ToList();
+                    if (!treeTokens.Any())
+                        continue;
+                    dict = treeTokens.ToDictionary(
+                        t => t,
+                        t => new List<SyntaxToken>());
+                // foreach (var token in idTokens)
+                // {
+                //     if (token.Parent?.SyntaxTree != tree)
+                //     {
+                //         continue;
+                //     }                    
+                //     dict[token] = new List<SyntaxToken>();
+                // }
+                // dict = treeTokens.ToDictionary(
+                //     t => t,
+                //     t => new List<SyntaxToken>());
+
+                var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+                var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
+                var model = compilation.GetSemanticModel(tree);
+
+                // int maxSpanStart = idTokens.Max(t => t.SpanStart);
+                int maxSpanStart = treeTokens
+                    .Select(t => t.SpanStart)
+                    .DefaultIfEmpty(0)
+                    .Max();
+                var location = tree.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(maxSpanStart, 0));
+                var lineSpan = location.GetLineSpan();
+                int lineIndex = lineSpan.StartLinePosition.Line;
+                int searchBoundary = tree.GetText().Lines[lineIndex].End;
+
+                // foreach (var token in idTokens)
+                // {
+                //     if (token.Parent?.SyntaxTree != tree)
+                //     {
+                //         continue;
+                //     }                    
+                //     dict[token] = new List<SyntaxToken>();
+                // }
+                if (dict.Any())
+                {
+                    List<SyntaxToken> visited = new List<SyntaxToken>();
+                    Dictionary<SyntaxToken, List<SyntaxToken>> dataflowRes = dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model);//, 0);
+                    res = res.Concat(dataflowRes).ToDictionary(x => x.Key, x => x.Value);
+                }
             }
-            List<SyntaxToken> visited = new List<SyntaxToken>();
-            return dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model);//, 0);
+            return res;
+            // var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+            // var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
+            // var model = compilation.GetSemanticModel(tree);
+            
+            // int maxSpanStart = idTokens.Max(t => t.SpanStart);
+            // var location = tree.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(maxSpanStart, 0));
+            // var lineSpan = location.GetLineSpan();
+            // int lineIndex = lineSpan.StartLinePosition.Line;
+            // int searchBoundary = tree.GetText().Lines[lineIndex].End;
+
+
+            // foreach (var token in idTokens)
+            // {
+            //     dict[token] = new List<SyntaxToken>();
+            // }
+            // List<SyntaxToken> visited = new List<SyntaxToken>();
+            // return dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model);//, 0);
         }
 
         public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary, SemanticModel model)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
@@ -77,7 +112,7 @@ namespace Project.SecretDetection.Semantics{
             //     return idTokens;
             // }
             
-            Console.WriteLine("Entered dataflow");
+            // Console.WriteLine("Entered dataflow");
 
             //We need to look for all instances of the keys in the tree so that we can use them for the analysis
             List<SyntaxToken> lookFor = new List<SyntaxToken>(); 
@@ -105,6 +140,8 @@ namespace Project.SecretDetection.Semantics{
                 var key = kv.Key;
                 var value = new List<SyntaxToken>(kv.Value); // doing this way avoids writing directly to idTokens
 
+                // if (!visited.Any(v => v.SpanStart == kv.Key.SpanStart && v.ValueText == kv.Key.ValueText))
+                // {
                 if(!visited.Contains(kv.Key)){ //avoids recomputing if we check for already visited tokens
                     List<SyntaxToken> someName = howIsVariableUsed(tree, new List<SyntaxToken>(), key.Parent!);
                     
@@ -158,19 +195,22 @@ namespace Project.SecretDetection.Semantics{
            
             foreach (var add in additions)
             {
-                newFinds[add] = new List<SyntaxToken>();
+                // if(!IsFieldDeclaration(add, model))
+                // {
+                    newFinds[add] = new List<SyntaxToken>();
+                // }
             }
-            newFinds = newFinds
-                .Where(kv=> !IsFieldDeclaration(kv.Key, model)) // Ensure we dont go furhter with the class variables once we are at the top of tree
-                .ToDictionary(kv=> kv.Key, kv => kv.Value);
+            // newFinds = newFinds
+            //     .Where(kv=> !IsFieldDeclaration(kv.Key, model)) // Ensure we dont go furhter with the class variables once we are at the top of tree
+            //     .ToDictionary(kv=> kv.Key, kv => kv.Value);
             
-            var filteredIdTokens = idTokens
-                .Where(kv=> !IsFieldDeclaration(kv.Key, model)) // Ensure we dont go furhter with the class variables once we are at the top of tree
-                .ToDictionary(kv=> kv.Key, kv => kv.Value);
+            // var filteredIdTokens = idTokens
+            //     .Where(kv=> !IsFieldDeclaration(kv.Key, model)) // Ensure we dont go furhter with the class variables once we are at the top of tree
+            //     .ToDictionary(kv=> kv.Key, kv => kv.Value);
 
             //check if idTokens and newFinds are the same - if they are the analysis did not add anything and we can end the function
-            // bool equal = areEqual(newFinds, idTokens);
-            bool equal = areEqual(newFinds, filteredIdTokens);
+            bool equal = areEqual(newFinds, idTokens);
+            // bool equal = areEqual(newFinds, filteredIdTokens);
 
             if (equal)
             {
@@ -213,30 +253,52 @@ namespace Project.SecretDetection.Semantics{
                 // Get original symbol
                 var originalSymbol = model.GetDeclaredSymbol(idToken.Parent!) ?? model.GetSymbolInfo(idToken.Parent!).Symbol;
 
-                // if (originalSymbol == null)
-                //     continue;
+                if (originalSymbol == null) continue;
 
                 // if(originalSymbol!.Kind != SymbolKind.Local &&
                 //    originalSymbol!.Kind != SymbolKind.Field &&
                 //    originalSymbol!.Kind != SymbolKind.Parameter) continue;
 
                 var declarationSpan =  originalSymbol?.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax().SpanStart ?? idToken.SpanStart;
+                int maxSpanStart = idTokens.Max(t => t.SpanStart);
+                var location = tree.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(maxSpanStart, 0));
+                var lineSpan = location.GetLineSpan();
+                int lineIndex = lineSpan.StartLinePosition.Line;
+                searchBoundary = tree.GetText().Lines[lineIndex].End;
+                var candidates = root.DescendantNodes()
+                    .Where(n => n.SpanStart <= searchBoundary)
+                    .Select(n => n switch
+                    {
+                        IdentifierNameSyntax id      => (node: (SyntaxNode)id, token: id.Identifier),
+                        VariableDeclaratorSyntax v   => (node: v,  token: v.Identifier),
+                        ParameterSyntax p            => (node: p,  token: p.Identifier),
+                        _                            => (node: null, token: default)
+                    })
+                    .Where(x => x.node != null);
+
+                foreach (var (node, token) in candidates)
+                {
+                    var symbol = model.GetDeclaredSymbol(node) ?? model.GetSymbolInfo(node).Symbol;
+                    if (symbol == null) continue;                       // keep the null guard
+                    if (SymbolEqualityComparer.Default.Equals(symbol, originalSymbol))
+                        foundInTree.Add(token);
+                }
 
                 // Find ALL references/usages -- Within the boundaries.
-                var matches = root.DescendantNodes()
-                    .OfType<IdentifierNameSyntax>()
-                    .Where(identifier => identifier.SpanStart <= searchBoundary)
+                // var matches = root.DescendantNodes()
+                //     .OfType<IdentifierNameSyntax>()
+                //     .Where(identifier => identifier.SpanStart <= searchBoundary)
 
-                    // .Where(identifier => identifier.SpanStart <= idToken.SpanStart)
-                    .Where(identifier =>
-                    {
-                        var symbol = model.GetDeclaredSymbol(identifier) ?? model.GetSymbolInfo(identifier.Parent!).Symbol;
-                        // if(symbol == null) return false;
-                        return SymbolEqualityComparer.Default.Equals(symbol,originalSymbol!);
-                    })
-                    .Select(identifier => identifier.Identifier);
+                //     // .Where(identifier => identifier.SpanStart <= idToken.SpanStart)
+                //     .Where(identifier =>
+                //     {
+                //         var symbol = model.GetDeclaredSymbol(identifier) ?? model.GetSymbolInfo(identifier.Parent!).Symbol;
+                //         if(symbol == null) return false;
+                //         return SymbolEqualityComparer.Default.Equals(symbol,originalSymbol!);
+                //     })
+                //     .Select(identifier => identifier.Identifier);
 
-                foundInTree.AddRange(matches);
+                // foundInTree.AddRange(matches);
             }
 
             return foundInTree.Distinct().ToList();
@@ -292,9 +354,9 @@ namespace Project.SecretDetection.Semantics{
                 case ExpressionStatementSyntax expression:
                     // Console.WriteLine("expression");
                     return new List<SyntaxToken>();
-                case InterpolationSyntax interpolation:
-                    // Console.WriteLine("interpolation");
-                    return InterpolationSyntaxHandler(tree, idTokens, node);
+                // case InterpolationSyntax interpolation:
+                //     // Console.WriteLine("interpolation");
+                //     return InterpolationSyntaxHandler(tree, idTokens, node);
                 //might be missing some cases - needs researching
                 default:
                     if (node is FieldDeclarationSyntax || node is LocalDeclarationStatementSyntax)

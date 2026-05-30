@@ -17,12 +17,13 @@ namespace Project.SecretDetection.PlaceAnalysis{
             // List<SyntaxToken> initAs = whatIsVarInitializedAs(trees, "HttpClient"); //hardcoded "HttpClient" because we want to know what a developer has called a predefined HttpClient
                                                                                     //could also have been hardcoded into the function whatIsVarInitializedAs as lookFor
 
-            List<SyntaxToken> initAs = findHttpInTree(trees[3], "HttpClient");
+
+            List<SyntaxToken> initAs = findHttpInTree(trees, "HttpClient");
             //AD COMPILATION OSV HER SÅ DET KAN SENDES TIL GETTOKENSINTREE
             //GENOVERVEJ LIGE INITAS SÅ DET INDKOORPORERER INDPUTTET ER ALLE INSTANCER AF TOKENS ISTEDDET!
 
 
-            Dictionary<SyntaxToken, List<SyntaxToken>> results = dataflow.initDataflow2(trees[3], initAs);   //returns a list of all id tokens that "have been touched" by a http client through out code
+            Dictionary<SyntaxToken, List<SyntaxToken>> results = dataflow.initDataflow2(trees, initAs);   //returns a list of all id tokens that "have been touched" by a http client through out code
 
             // Debugging
             // foreach(var res in results) 
@@ -42,53 +43,58 @@ namespace Project.SecretDetection.PlaceAnalysis{
 
             return weight;
         }
-        public List<SyntaxToken> findHttpInTree(SyntaxTree tree, string HttpClient)
+        public List<SyntaxToken> findHttpInTree(List<SyntaxTree> trees, string HttpClient)
         {
             List<SyntaxToken> httper = new List<SyntaxToken>();
-            SyntaxNode root = tree.GetRoot();
-            // Get the compilation 
-            // look for HttpClients
-            // Add to list
-                // If any are var declarations
-                    // add the initialized as IdToken to list too
-                    // run the findHttpInTree on this variable as well 
-            // return that list 
 
-            var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
-            var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
-            // var model = compilation.GetSemanticModel(tree);
-            var model = compilation.GetSemanticModel(tree);
-            var idTokensSyntaxNodes = root.DescendantTokens()
-                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
-                            t.ValueText == HttpClient)
-                .ToList();
-            List<SyntaxToken> newFinds = new List<SyntaxToken>();
-            foreach(var id in idTokensSyntaxNodes)
+            foreach (var tree in trees)
             {
-                bool isInVariableDeclaration = id.Parent?.FirstAncestorOrSelf<VariableDeclarationSyntax>() != null;
-                if (isInVariableDeclaration)
+                SyntaxNode root = tree.GetRoot();
+                // Get the compilation 
+                // look for HttpClients
+                // Add to list
+                    // If any are var declarations
+                        // add the initialized as IdToken to list too
+                        // run the findHttpInTree on this variable as well 
+                // return that list 
+
+                var Mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
+                var compilation = CSharpCompilation.Create("MyCompilation",syntaxTrees: new[] { tree }, references: new[] { Mscorlib });
+                // var model = compilation.GetSemanticModel(tree);
+                var model = compilation.GetSemanticModel(tree);
+                var idTokensSyntaxNodes = root.DescendantTokens()
+                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
+                                t.ValueText == HttpClient)
+                    .ToList();
+                List<SyntaxToken> newFinds = new List<SyntaxToken>();
+                foreach(var id in idTokensSyntaxNodes)
                 {
-                    var declarator = id.Parent?.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
-
-                    if (declarator != null)
+                    bool isInVariableDeclaration = id.Parent?.FirstAncestorOrSelf<VariableDeclarationSyntax>() != null;
+                    if (isInVariableDeclaration)
                     {
-                        var newAnalysis = declarator.Identifier;
-                        if (!idTokensSyntaxNodes.Contains(newAnalysis))
+                        var declarator = id.Parent?.FirstAncestorOrSelf<VariableDeclaratorSyntax>();
+
+                        if (declarator != null)
                         {
-                            var newAdds = root.DescendantTokens()
-                                .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
-                                            t.ValueText == newAnalysis.Text)
-                                .ToList();
-                            newFinds.AddRange(newAdds);
-                        }
-                    }                        
+                            var newAnalysis = declarator.Identifier;
+                            if (!idTokensSyntaxNodes.Contains(newAnalysis))
+                            {
+                                var newAdds = root.DescendantTokens()
+                                    .Where(t => t.IsKind(SyntaxKind.IdentifierToken) &&
+                                                t.ValueText == newAnalysis.Text)
+                                    .ToList();
+                                newFinds.AddRange(newAdds);
+                            }
+                        }                        
+                    }
                 }
+                if (newFinds !=null)
+                {
+                    idTokensSyntaxNodes.AddRange(newFinds);
+                }
+                httper.AddRange(idTokensSyntaxNodes);
             }
-            if (newFinds !=null)
-            {
-                idTokensSyntaxNodes.AddRange(newFinds);
-            }
-            return idTokensSyntaxNodes;
+            return httper;
         }
         
         //Where is the http client initalized? Where do we need to look in the dataflow analysis?
