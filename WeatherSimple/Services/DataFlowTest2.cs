@@ -11,7 +11,9 @@ namespace WeatherStation
         {
             WeatherExtension weather = new WeatherExtension();
             string secret1 = "Hello";
-            weather.useVariable(secret1);
+            string testing = secret1;
+            string intermediary = testing;
+            weather.useVariable(intermediary);
         }
     }
 }

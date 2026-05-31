@@ -116,41 +116,8 @@ namespace Project.SecretDetection.Semantics{
                             r.Value.Add(argExpr.Identifier); //add the argExp.identfier to r's values so that we can do dataflow again
 
                             List<SyntaxToken> token = new List<SyntaxToken>{argExpr.Identifier};
-                            // token.Add(argExpr.Identifier);
                             Dictionary<SyntaxToken, List<SyntaxToken>> newDict = initDataflow2(trees, token);
                             res2 = res2.Concat(newDict).ToDictionary(x => x.Key, x => x.Value);
-
-                            // //init dataflow again:
-                            // int argSpanStart = argExpr.Identifier.SpanStart;
-                            // var argLocation = other.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(argSpanStart, 0));
-                            // var argLineSpan = argLocation.GetLineSpan();
-                            // int argLineIndex = argLineSpan.StartLinePosition.Line;
-                            // int argSearchBoundary = other.GetText().Lines[argLineIndex].End;
-                            // // Dictionary<SyntaxToken, List<SyntaxToken>> newDict = new Dictionary<SyntaxToken, List<SyntaxToken>>();
-                            // var subVisited = new List<SyntaxToken>();
-                            
-                            // var seed = new Dictionary<SyntaxToken, List<SyntaxToken>>
-                            // {
-                            //     [argExpr.Identifier] = new List<SyntaxToken>()
-                            // };
-                            // Console.WriteLine(":)");
-                            // Dictionary<SyntaxToken, List<SyntaxToken>> sub = dataflowAnalysis(other, seed, subVisited, compilation1, argSearchBoundary, otherModel);
-                            // res2.Concat(sub).ToDictionary(x => x.Key, x => x.Value);
-                            // // var sub = dataflowAnalysis(other, seed, subVisited, compilation1, argSearchBoundary, model1);
-
-                            // // merge results back into res AFTER the call
-                            // // foreach (var kv in sub)
-                            // //     res[kv.Key] = res.TryGetValue(kv.Key, out var ex)
-                            // //         ? ex.Concat(kv.Value).Distinct().ToList()
-                            // //         : kv.Value;
-
-                            
-                            // // newDict = dataflowAnalysis(other, res, subVisited, compilation1, argSearchBoundary,model1);
-                            // // dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model)
-                            //     //These inputs should then be traced with dataflow analysis again and set to be a key in the dataflow analysis 
-                            //         //insert them to the value list to the r.key.
-                            //             //apply dataflow analysis on the res again (which is ok and not too much because of visited list:) )
-
                             Console.WriteLine("PARAM {1} <--- ARG {0}", paramSyntax.Identifier.ValueText,argExpr.Identifier.ValueText);
                             // dataflow on argExpr.Identifier in "other" to reach secret1 = "Hello"
                         }
