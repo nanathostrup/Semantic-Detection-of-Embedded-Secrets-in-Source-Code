@@ -71,7 +71,8 @@ namespace Project.SecretDetection.Semantics{
 
             var Mscorlib1 = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
             var compilation1 = CSharpCompilation.Create("MyCompilation", syntaxTrees: trees, references: new[] { Mscorlib1 });
-
+            Dictionary<SyntaxToken, List<SyntaxToken>> res2 = new Dictionary<SyntaxToken, List<SyntaxToken>>();
+            res2 = res2.Concat(res).ToDictionary(x => x.Key, x => x.Value);
             for (int i=0; i < trees.Count;  i ++)
             {
                 var root = trees[i].GetRoot();
@@ -112,9 +113,43 @@ namespace Project.SecretDetection.Semantics{
                             //Find the inputs to the usages
                             var argExpr = inv.ArgumentList.Arguments[idx].Expression as IdentifierNameSyntax;
                             if (argExpr == null) continue;
-                                //These inputs should then be traced with dataflow analysis again and set to be a key in the dataflow analysis 
-                                    //insert them to the value list to the r.key.
-                                        //apply dataflow analysis on the res again (which is ok and not too much because of visited list:) )
+                            r.Value.Add(argExpr.Identifier); //add the argExp.identfier to r's values so that we can do dataflow again
+
+                            List<SyntaxToken> token = new List<SyntaxToken>{argExpr.Identifier};
+                            // token.Add(argExpr.Identifier);
+                            Dictionary<SyntaxToken, List<SyntaxToken>> newDict = initDataflow2(trees, token);
+                            res2 = res2.Concat(newDict).ToDictionary(x => x.Key, x => x.Value);
+
+                            // //init dataflow again:
+                            // int argSpanStart = argExpr.Identifier.SpanStart;
+                            // var argLocation = other.GetLocation(new Microsoft.CodeAnalysis.Text.TextSpan(argSpanStart, 0));
+                            // var argLineSpan = argLocation.GetLineSpan();
+                            // int argLineIndex = argLineSpan.StartLinePosition.Line;
+                            // int argSearchBoundary = other.GetText().Lines[argLineIndex].End;
+                            // // Dictionary<SyntaxToken, List<SyntaxToken>> newDict = new Dictionary<SyntaxToken, List<SyntaxToken>>();
+                            // var subVisited = new List<SyntaxToken>();
+                            
+                            // var seed = new Dictionary<SyntaxToken, List<SyntaxToken>>
+                            // {
+                            //     [argExpr.Identifier] = new List<SyntaxToken>()
+                            // };
+                            // Console.WriteLine(":)");
+                            // Dictionary<SyntaxToken, List<SyntaxToken>> sub = dataflowAnalysis(other, seed, subVisited, compilation1, argSearchBoundary, otherModel);
+                            // res2.Concat(sub).ToDictionary(x => x.Key, x => x.Value);
+                            // // var sub = dataflowAnalysis(other, seed, subVisited, compilation1, argSearchBoundary, model1);
+
+                            // // merge results back into res AFTER the call
+                            // // foreach (var kv in sub)
+                            // //     res[kv.Key] = res.TryGetValue(kv.Key, out var ex)
+                            // //         ? ex.Concat(kv.Value).Distinct().ToList()
+                            // //         : kv.Value;
+
+                            
+                            // // newDict = dataflowAnalysis(other, res, subVisited, compilation1, argSearchBoundary,model1);
+                            // // dataflowAnalysis(tree, dict, visited, compilation, searchBoundary, model)
+                            //     //These inputs should then be traced with dataflow analysis again and set to be a key in the dataflow analysis 
+                            //         //insert them to the value list to the r.key.
+                            //             //apply dataflow analysis on the res again (which is ok and not too much because of visited list:) )
 
                             Console.WriteLine("PARAM {1} <--- ARG {0}", paramSyntax.Identifier.ValueText,argExpr.Identifier.ValueText);
                             // dataflow on argExpr.Identifier in "other" to reach secret1 = "Hello"
@@ -122,94 +157,9 @@ namespace Project.SecretDetection.Semantics{
                     }
                 }
             }
-            return res;
+            return res2;
         }
 
-                    // // if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
-                    //     var methodSymbol = model.GetSymbolInfo(paramSyntax).Symbol as IMethodSymbol;
-                    //     if (methodSymbol == null) continue;   // didn't bind (e.g. framework method)
-                    //         foreach (var other in trees)
-                    //         {
-                    //             var otherModel = compilation1.GetSemanticModel(other);
-
-                    //             foreach (var inv in other.GetRoot()
-                    //                                     .DescendantNodes()
-                    //                                     .OfType<InvocationExpressionSyntax>())
-                    //             {
-                    //                 var called = otherModel.GetSymbolInfo(inv).Symbol as IMethodSymbol;
-                    //                 if (!SymbolEqualityComparer.Default.Equals(called, methodSymbol)) continue;
-                    //                 if (inv == invocation) continue;          // skip the one we started from
-
-                    //                 Console.WriteLine($"CALLED in {System.IO.Path.GetFileName(other.FilePath)}: {inv}");
-                    //                 // inv is another call site of the same method.
-                    //             }
-                    //         }
-
-                        // declRef.SyntaxTree is the tree where the method body lives.
-                        // if (declRef.SyntaxTree == trees[j])
-                        // {
-                    //         Console.WriteLine("ITS FROM ANOTHER FILE: " + methodSymbol);
-                    //         // invocation in trees[i] calls a method DECLARED in trees[j].
-                    //     // }
-                    // }
-                    //     }
-                    // }
-            //     }
-            // }            
-        //     return res;
-        // }
-
-
-
-                //For every invocation in the tree
-                    //if there is an inv created in another tree
-                        //is the arglist in idtokens? 
-                            //apply dataflow analysis on the arglist in 
-
-                // foreach (var r in res)
-                // {
-                //     Console.WriteLine("\n" + r.Key);
-
-                //     //if idtoken in this tree
-                //         //if token is input in invocation syntax
-                //     if (r.Key.Parent?.SyntaxTree ==trees[i])
-                //     {
-                //         var arg = r.Key.Parent?.Parent as ArgumentSyntax;
-                //         if (arg?.Parent is ArgumentListSyntax argList && argList.Parent is InvocationExpressionSyntax invocation)
-                //         {
-                //             Console.WriteLine(arg); // VI SKAL SE OM ALLE TOKENS DER LEDER FRA DEN HER KØRER IND I NOGET I ET ANDET TRÆ!
-                //             for (int j = 0; j < trees.Count; j++)
-                //             {
-                //             //if invocation is MADE/CREATED in another tree
-                //                 //add the input r to the value for r
-                //                 // run dataflow on the dicitonary
-
-                //                 if (i != j)
-                //                 {
-                //                     var methodSymbol = model.GetSymbolInfo(invocation).Symbol as IMethodSymbol;
-                //                     if (methodSymbol == null) continue;   // didn't bind (e.g. framework method)
-
-                //                     var declRef = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-                //                     if (declRef == null) continue;        // no source — external/library method
-
-                //                     // declRef.SyntaxTree is the tree where the method body lives.
-                //                     if (declRef.SyntaxTree == trees[j])
-                //                     {
-                //                         Console.WriteLine("ITS FROM ANOTHER FILE: " + methodSymbol);
-                //                         // invocation in trees[i] calls a method DECLARED in trees[j].
-                //                     }
-                //                     //if(invocation method is declared in tree[j])
-                //                     // {
-                //                     //     ;
-                //                     // }
-                //                 }
-                //             }
-                //         }
-                //     }
-                // }
-            // }
-        //     return res;
-        // }
 
         public Dictionary<SyntaxToken, List<SyntaxToken>> dataflowAnalysis(SyntaxTree tree, Dictionary<SyntaxToken, List<SyntaxToken>> idTokens, List<SyntaxToken> visited, CSharpCompilation compilation, int searchBoundary, SemanticModel model)//, int counter) //Global dictionary? - Bøvlet at nulstille. Eller dictionary der bliver sendt rundt? Det er bare supre besværligt når man skal kalde den her funktion ude fra?
         {
