@@ -37,34 +37,35 @@ namespace Project.SecretDetection.DetectionsTypes{
             List<EnvironmentVariable> usedEnvironmentVariables = checkEnvironmentFileForUsed(environmentVariableMap, filePath);
             List<EnvironmentVariable> unusedEnvironmentVariables = checkEnvironmentFileForUnused(environmentVariableMap, filePath);
 
-            Console.WriteLine("");
-            Console.WriteLine(" =========================== EXTRACTING VARIABLES ============================= ");
-            foreach(var usedEnvironmentVariable in usedEnvironmentVariables) //Debugging
-            {
-                Console.WriteLine("USED environment variable {0} found in file: {1},\n on line {2}. secret: {3}", 
-                usedEnvironmentVariable.name, usedEnvironmentVariable.envfile, usedEnvironmentVariable.index, usedEnvironmentVariable.secret);
-            }
-            Console.WriteLine("");
-            foreach(var unusedEnvironmentVariable in unusedEnvironmentVariables)
-            {
-                Console.WriteLine("UNUSED environment variable {0} found in file: {1},\n on line {2}. secret: {3}", 
-                unusedEnvironmentVariable.name, unusedEnvironmentVariable.envfile, unusedEnvironmentVariable.index, unusedEnvironmentVariable.secret);
-            }
+            // Console.WriteLine("");
+            // Console.WriteLine(" =========================== EXTRACTING VARIABLES ============================= ");
+            // foreach(var usedEnvironmentVariable in usedEnvironmentVariables) //Debugging
+            // {
+            //     Console.WriteLine("USED environment variable {0} found in file: {1},\n on line {2}. secret: {3}", 
+            //     usedEnvironmentVariable.name, usedEnvironmentVariable.envfile, usedEnvironmentVariable.index, usedEnvironmentVariable.secret);
+            // }
+            // Console.WriteLine("");
+            // foreach(var unusedEnvironmentVariable in unusedEnvironmentVariables)
+            // {
+            //     Console.WriteLine("UNUSED environment variable {0} found in file: {1},\n on line {2}. secret: {3}", 
+            //     unusedEnvironmentVariable.name, unusedEnvironmentVariable.envfile, unusedEnvironmentVariable.index, unusedEnvironmentVariable.secret);
+            // }
             
             Console.WriteLine("");
             Console.WriteLine(" ================================= SCORING =================================== "); 
+            Console.WriteLine("Assigning score for Environment Variables");
             List<EnvironmentVariable> usedEnvVarWithScores = giveScore(trees, usedEnvironmentVariables); 
             List<EnvironmentVariable> unusedEnvVarWithScores = giveScore(trees, unusedEnvironmentVariables); 
-            foreach(var usedEnvVarWithScore in usedEnvVarWithScores)
-            {
-                Console.WriteLine("Name: {0}. Final score for secret {1}: {2}", usedEnvVarWithScore.name, usedEnvVarWithScore.secret, usedEnvVarWithScore.score);
-                Console.WriteLine("Comments on detection: {0}", usedEnvVarWithScore.comment);
-            }
-            foreach(var unusedEnvVarWithScore in unusedEnvVarWithScores)
-            {
-                Console.WriteLine("Name: {0}. Final score for secret {1}: {2}", unusedEnvVarWithScore.name, unusedEnvVarWithScore.secret, unusedEnvVarWithScore.score);
-                Console.WriteLine("Comments on detection: {0}", unusedEnvVarWithScore.comment);
-            }
+            // foreach(var usedEnvVarWithScore in usedEnvVarWithScores)
+            // {
+            //     Console.WriteLine("Name: {0}. Final score for secret {1}: {2}", usedEnvVarWithScore.name, usedEnvVarWithScore.secret, usedEnvVarWithScore.score);
+            //     Console.WriteLine("Comments on detection: {0}", usedEnvVarWithScore.comment);
+            // }
+            // foreach(var unusedEnvVarWithScore in unusedEnvVarWithScores)
+            // {
+            //     Console.WriteLine("Name: {0}. Final score for secret {1}: {2}", unusedEnvVarWithScore.name, unusedEnvVarWithScore.secret, unusedEnvVarWithScore.score);
+            //     Console.WriteLine("Comments on detection: {0}", unusedEnvVarWithScore.comment);
+            // }
 
             //build report
             Console.WriteLine("");
@@ -73,8 +74,7 @@ namespace Project.SecretDetection.DetectionsTypes{
             buildReport(unusedEnvVarWithScores, true); //hardcoded append feature. Fix in future.
             string logpath = Path.Combine(Directory.GetCurrentDirectory(), "Report.txt"); 
             
-            Console.WriteLine("A report has been made in " + logpath);
-
+            Console.WriteLine("A report has been made in " + logpath + "\n");
         }
         public List<EnvironmentVariable> checkEnvironmentFileForUsed(Dictionary<string, string> environmentVariableMap, string filePath)
         {

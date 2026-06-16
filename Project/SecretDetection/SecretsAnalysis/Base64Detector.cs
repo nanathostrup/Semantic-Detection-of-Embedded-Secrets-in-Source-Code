@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Project.SecretDetection.SecretsAnalysis{
     public class Base64Detector : SecretDetector
     {
-        public float score = 0;
+        public override float score { get; set; }
         public override float detect(string secret)
         {
             score = 0.0F;

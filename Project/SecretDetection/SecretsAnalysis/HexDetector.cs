@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Project.SecretDetection.SecretsAnalysis{
     public class HexDetector : SecretDetector
     {
-        public float score;
+        public override float score { get; set; }
         public override float detect(string secret)
         {
             score = 0.0F;
@@ -27,6 +27,11 @@ namespace Project.SecretDetection.SecretsAnalysis{
         {
             List<char> validChars = new List<char>() {'a','b','c','d','e','f','0','1','2','3','4','5','6','7','8','9', 'A', 'B','C','D','E','F'}; //Could probably be done smarter
             //Check if each char in str is from 0-9 or a-f or A-F
+            if (string.IsNullOrEmpty(secret) || secret.Length % 8 != 0)
+            {
+                return false;
+            }
+            
             foreach (char ch in secret)
             {
                 if (!validChars.Contains(ch))

@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Project.SecretDetection.Semantics{
     class Walker : CSharpSyntaxWalker
     {
-        //Måske lav til dictionary så vi er sikker på at de hænger sammen på den rigtige måde
         public Dictionary<string, string> EnvironmentVariableMap = new();
         public override void VisitInvocationExpression(InvocationExpressionSyntax invocation)
             {
@@ -44,10 +43,10 @@ namespace Project.SecretDetection.Semantics{
                 {
                     foreach (var arg in arglist)
                     {
-                        // if (initializedas != null)
-                        // {
+                        if (initializedas != null)
+                        {
                             EnvironmentVariableMap[arg] = initializedas;   
-                        // }
+                        }
                     }
                 }
             }

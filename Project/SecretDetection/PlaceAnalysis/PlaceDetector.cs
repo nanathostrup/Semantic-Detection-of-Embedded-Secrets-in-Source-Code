@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Project.SecretDetection.PlaceAnalysis{
     public abstract class PlaceDetector
     {
-        public float weight; //how critical is the place the secret is leaked to?
+        public abstract float weight {get; set;} //how critical is the place the secret is leaked to?
         public abstract float getWeight(List<SyntaxTree> trees, string secret); //input is where to look for the leak (the code base as syntax trees)
                                                                                 //and the string secret you are looking to trace
                                                                                 //should return the weight of place detection

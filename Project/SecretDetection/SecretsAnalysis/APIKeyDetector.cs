@@ -11,7 +11,7 @@ using Project.SecretDetection.SecretsAnalysis.APIKeyVariants;
 namespace Project.SecretDetection.SecretsAnalysis{
     public class APIKeyDetector: SecretDetector
     {
-        public float score = 0.0F;
+        public override float score { get; set; }
         public string apiType = "NONE";
         public override float detect(string secret)
         {

@@ -24,7 +24,6 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
             for (int i = 0; i < environmentVariables.Count; i++)
             {
                 updatedScore.Add(giveScore(environmentVariables[i], trees));
-
                 if (environmentVariables[i].used) //does not make sense to check where the unused variables are going. They are going nowhere already
                 {
                     updatedScore[i] = giveWeight(updatedScore[i], trees);
@@ -86,7 +85,7 @@ namespace Project.SecretDetection.DetectionsTypes.EnvironmentFileDetections{
                 environmentVariable.score += base64Val;
                 environmentVariable.comment = environmentVariable.comment + "This string looks like it is base64 encoded. ";
             }
-            if (hexVal > 0) // medium detection
+            if (hexVal > 0)// && environmentVariable.secret.Length > 8) // medium detection
             {
                 environmentVariable.score += hexVal;
                 environmentVariable.comment = environmentVariable.comment + "This string looks like hex. ";
